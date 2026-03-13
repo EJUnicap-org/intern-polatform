@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard EJ Unicap</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<body class="dark-theme">
+    <div class="container">
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="ph-fill ph-shield-check"></i>
+                <div><strong>EJ UNICAP</strong><span>Gestão Interna</span></div>
+            </div>
+            
+            <nav class="menu">
+                <p class="menu-label">Operacional</p>
+                <a href="#" class="nav-link active" data-target="acompanhamento"><i class="ph ph-chart-line"></i> Acompanhamento</a>
+                <a href="#" class="nav-link" data-target="individual"><i class="ph ph-user"></i> Individual</a>
+                <a href="#" class="nav-link" data-target="ponto"><i class="ph ph-clock"></i> Ponto</a>
+                <a href="#" class="nav-link" data-target="leads"><i class="ph ph-users-three"></i> Leads</a>
+                
+                <p class="menu-label">Administrativo</p>
+                <a href="#" class="nav-link" data-target="psel"><i class="ph ph-identification-card"></i> Processo Seletivo</a>
+                <a href="#" class="nav-link" data-target="time"><i class="ph ph-users"></i> Visão do Time</a>
+                <a href="#" class="nav-link" data-target="reembolsos"><i class="ph ph-hand-coins"></i> Reembolsos</a>
+                <a href="#" class="nav-link" data-target="faltas"><i class="ph ph-calendar-x"></i> Faltas</a>
+            </nav>
+        </aside>
+
+        <main class="content">
+            <header class="top-bar">
+                <div class="breadcrumb">Dashboard / <span id="page-title">Acompanhamento</span></div>
+                <div class="user-area"><div class="avatar"></div></div>
+            </header>
+
+            <div id="tab-container">
+                <section id="sec-acompanhamento" class="tab-content active">
+    <div class="header-main">
+        <h1>Acompanhamento</h1>
+        <p class="dim">Visão geral das frentes em andamento</p>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="col-left">
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h3>Projetos em acompanhamento</h3>
+                        <p class="dim">Lista priorizada com status</p>
+                    </div>
+                    <div class="card-actions">
+                        <select class="dark-input">
+                            <option>Todos</option>
+                        </select>
+                        <button class="btn-icon"><i class="ph ph-plus"></i></button>
+                    </div>
+                </div>
+                <div class="empty-state">
+                    <p class="dim">Nenhum projeto encontrado para o filtro selecionado.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h3>Membros da equipe</h3>
+                        <p class="dim">Última atividade registrada</p>
+                    </div>
+                    <div class="tags-info">
+                        <span class="badge"><i class="ph ph-tag"></i> Tags</span>
+                        <span class="badge">Total: 25</span>
+                    </div>
+                </div>
+                </div>
+        </div>
+
+        <div class="col-right">
+            <div class="card chart-card">
+                <h3>Membros ocupados</h3>
+                <p class="dim">Percentual de membros ocupados</p>
+                
+                <div class="circle-chart-container">
+                    <div class="circle-chart">
+                        <div class="chart-content">
+                            <strong>0%</strong>
+                            <span>Ocupados</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="chart-footer">
+                    <span>Ocupação da equipe <i class="ph ph-trend-up"></i></span>
+                    <p class="dim">Baseado nos dados mais recentes</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Alertas recentes</h3>
+                <p class="dim">Eventos que exigem atenção</p>
+                <div class="empty-state">
+                    <p class="dim">Sem alertas no momento.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+                <section id="sec-individual" class="tab-content">
+    <div class="header-main">
+        <h1>Individual</h1>
+        <p class="dim">Sua visão personalizada e gestão de tarefas</p>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="col-left">
+            <div class="card card-tarefas">
+                <h3>Lista de tarefas</h3>
+                <p class="dim">Atividades da semana</p>
+                <div class="empty-state">
+                    <p class="dim">Nenhuma tarefa encontrada.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Agenda</h3>
+                <p class="dim">Novo compromisso</p>
+                <form class="form-agenda">
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label>Data</label>
+                            <input type="date" class="dark-input">
+                        </div>
+                        <div class="input-group">
+                            <label>Nome da atividade</label>
+                            <input type="text" placeholder="Ex: Visita técnica" class="dark-input">
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Descrição</label>
+                        <textarea placeholder="Detalhes do compromisso" class="dark-input"></textarea>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-right">
+            <div class="card card-calendar">
+                <div class="calendar-header">
+                    <h3>Calendário</h3>
+                    <p class="dim">Dias clicáveis para agenda</p>
+                </div>
+                
+                <div class="calendar-widget">
+                    <div class="month-nav">
+                        <button class="btn-icon"><i class="ph ph-caret-left"></i></button>
+                        <strong>March 2026</strong>
+                        <button class="btn-icon"><i class="ph ph-caret-right"></i></button>
+                    </div>
+                    <div class="calendar-grid">
+                        <div class="day-name">Su</div><div class="day-name">Mo</div><div class="day-name">Tu</div>
+                        <div class="day-name">We</div><div class="day-name">Th</div><div class="day-name">Fr</div><div class="day-name">Sa</div>
+                        <div class="day">1</div><div class="day active">2</div><div class="day">3</div>
+                        <div class="day">4</div><div class="day">5</div><div class="day">6</div><div class="day">7</div>
+                        </div>
+                </div>
+
+                <div class="atividades-dia">
+                    <p class="label">ATIVIDADES DO DIA</p>
+                    <strong>02/03/2026</strong>
+                    <p class="dim">Nenhuma atividade para este dia.</p>
+                </div>
+            </div>
+
+            <div class="card card-ponto-mini">
+                
+                <h3>Ponto</h3>
+                <p class="dim">Horas semanais (seg-dom)</p>
+                
+                <div class="ponto-status">
+                    <button class="btn-ponto-action">Registrar Entrada</button>
+                    <div class="ponto-timer">
+                        <strong>0.00h</strong>
+                        <span>de 4h trabalhadas</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div class="progress-labels">
+                        <span>0h</span>
+                        <span>4h</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+                <section id="sec-ponto" class="tab-content">
+    <div class="header-main">
+        <h1>Ponto Eletrônico</h1>
+        <p class="dim">Registo e consulta de carga horária</p>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="col-left">
+            <div class="card card-ponto-principal">
+                <div class="ponto-header">
+                    <div class="timer-large">
+                        <span id="ponto-clock">00:00:00</span>
+                        <p class="dim" id="ponto-date">Carregando data...</p>
+                    </div>
+                </div>
+                
+                <div class="ponto-controls">
+                    <button class="btn-ponto-main in" onclick="registrarPonto('entrada')">
+                        <i class="ph ph-sign-in"></i> Registar Entrada
+                    </button>
+                    <button class="btn-ponto-main out" onclick="registrarPonto('saida')">
+                        <i class="ph ph-sign-out"></i> Registar Saída
+                    </button>
+                </div>
+
+                <div class="ponto-summary">
+                    <div class="summary-item">
+                        <span>Horas Hoje</span>
+                        <strong>0.00h</strong>
+                    </div>
+                    <div class="summary-item">
+                        <span>Saldo da Semana</span>
+                        <strong class="text-green">+1.5h</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Registos de Hoje</h3>
+                <div class="logs-hoje">
+                    <div class="log-entry empty">
+                        <p class="dim">Nenhum registo efetuado hoje.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-right">
+            <div class="card wide">
+                <div class="card-header">
+                    <h3>Histórico Semanal</h3>
+                    <select class="dark-input">
+                        <option>Esta semana</option>
+                        <option>Semana passada</option>
+                    </select>
+                </div>
+                
+                <div class="historial-lista">
+                    <div class="history-item">
+                        <div class="date-tag">02 Mar</div>
+                        <div class="time-details">
+                            <strong>08:00 - 12:00</strong>
+                            <p class="dim">Projeto: Sistema de Gestão</p>
+                        </div>
+                        <div class="total-day">4h</div>
+                    </div>
+                    
+                    <div class="history-item">
+                        <div class="date-tag">03 Mar</div>
+                        <div class="time-details">
+                            <strong>09:15 - 11:45</strong>
+                            <p class="dim">Reunião Interna</p>
+                        </div>
+                        <div class="total-day">2.5h</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+                <section id="sec-leads" class="tab-content">
+    <div class="header-main">
+        <div class="flex-between">
+            <div>
+                <h1>Gestão de Leads</h1>
+                <p class="dim">Prospecção e qualificação de novas organizações</p>
+            </div>
+            <button class="btn-primary" onclick="openModal('modal-lead')">
+                <i class="ph ph-plus"></i> Novo Lead
+            </button>
+        </div>
+    </div>
+
+    <div class="card" style="padding: 15px; margin-bottom: 20px;">
+        <div class="search-leads" style="display: flex; gap: 10px;">
+            <input type="text" id="search-input" placeholder="Procurar empresa ou CNPJ..." class="dark-input">
+            <select class="dark-input" style="width: 200px;">
+                <option value="all">Todos os Status</option>
+                <option value="lead">Apenas Leads</option>
+                <option value="cliente">Clientes</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Empresa</th>
+                        <th>CNPJ</th>
+                        <th>Status</th>
+                        <th>Nº Contatos</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="leads-list-body">
+                    <tr><td colspan="5" class="text-center dim">A carregar leads do servidor...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="modal-lead" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Registar Nova Organização</h3>
+                <button class="close-btn" onclick="closeModal('modal-lead')">&times;</button>
+            </div>
+            
+            <form id="lead-form">
+                <div class="form-section">
+                    <h4 style="margin-bottom: 10px; color: var(--primary);">Dados da Empresa</h4>
+                    <div class="input-group">
+                        <label>Nome da Empresa</label>
+                        <input type="text" id="lead-name" required placeholder="Ex: Tech Solutions" class="dark-input">
+                    </div>
+                    <div class="input-group">
+                        <label>CNPJ</label>
+                        <input type="text" id="lead-cnpj" required placeholder="00.000.000/0000-00" class="dark-input">
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="flex-between" style="margin-bottom: 10px;">
+                        <h4 style="color: var(--primary);">Contactos da Organização</h4>
+                        <button type="button" class="btn-primary" style="padding: 5px 10px; font-size: 12px;" onclick="addContactField()">
+                            + Adicionar
+                        </button>
+                    </div>
+                    <p class="dim small" style="margin-bottom: 10px;">Adicione pelo menos um contacto principal.</p>
+                    
+                    <div id="contacts-container">
+                        </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                    <button type="button" class="btn-icon" style="width: auto; padding: 0 20px;" onclick="closeModal('modal-lead')">Cancelar</button>
+                    <button type="submit" class="btn-primary">Salvar Organização</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+           <section id="sec-psel" class="tab-content">
+    <div class="header-main">
+        <div class="flex-between">
+            <div>
+                <h1>Processo Seletivo</h1>
+                <p class="dim">Gerencie candidatos e configure o formulário de inscrição</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-primary" onclick="openModal('modal-criar-formulario')">
+                    <i class="ph ph-form-check"></i> Editar Formulário
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="card">
+            <div class="card-header">
+                <h3>Candidatos Inscritos</h3>
+                <span class="badge">12 Candidatos</span>
+            </div>
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Candidato</th>
+                            <th>Curso</th>
+                            <th>Fase</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="candidates-body">
+                        <tr>
+                            <td>João Silva</td>
+                            <td>Engenharia</td>
+                            <td><span class="status-badge status-lead">Inscrito</span></td>
+                            <td><button class="btn-icon"><i class="ph ph-eye"></i></button></td>
+                        </tr>
+                        <tr>
+                            <td>Maria Clara</td>
+                            <td>Direito</td>
+                            <td><span class="status-badge" style="background:#22c55e22; color:#22c55e;">Entrevista</span></td>
+                            <td><button class="btn-icon"><i class="ph ph-eye"></i></button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>Configurações de Link</h3>
+            </div>
+            <div class="form-agenda">
+                <div class="atividades-dia">
+                    <p class="label">STATUS DO PSEL</p>
+                    <strong>Inscrições Abertas</strong>
+                    <p class="dim small">Finaliza em 20/03/2026</p>
+                </div>
+                
+                <div class="input-group" style="margin-top: 20px;">
+                    <label>URL do Formulário Público</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" readonly value="https://ejunicap.com/psel-2026" class="dark-input" style="font-size: 11px;">
+                        <button class="btn-icon" title="Copiar"><i class="ph ph-copy"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-criar-formulario" class="modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <div>
+                    <h3>Editor de Formulário</h3>
+                    <p class="dim small">As alterações serão aplicadas ao link público.</p>
+                </div>
+                <button class="close-btn" onclick="closeModal('modal-criar-formulario')">&times;</button>
+            </div>
+            
+            <form id="psel-builder-form">
+                <div id="questions-container" style="max-height: 400px; overflow-y: auto; padding-right: 10px;">
+                    </div>
+                
+                <button type="button" class="btn-outline-sm" onclick="addQuestionField()" style="margin-top: 15px; border: 1px dashed var(--border); padding: 12px;">
+                    <i class="ph ph-plus-circle"></i> Adicionar Pergunta Personalizada
+                </button>
+
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 25px; padding-top: 15px; border-top: 1px solid var(--border);">
+                    <button type="button" class="btn-icon" style="width: auto; padding: 0 20px;" onclick="closeModal('modal-criar-formulario')">Cancelar</button>
+                    <button type="submit" class="btn-primary">Salvar e Publicar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+              <section id="sec-time" class="tab-content">
+    <div class="header-main">
+        <div class="flex-between">
+            <div>
+                <h1>Visão do Time</h1>
+                <p class="dim">Dados em tempo real extraídos do servidor</p>
+            </div>
+            <div class="tags-info">
+                <span class="badge" id="total-members">Carregando...</span>
+                <span class="badge" id="avg-presence" style="border-color: var(--success); color: var(--success);">--% Presença</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="card">
+            <div class="card-header">
+                <h3>Equipe em Atividade</h3>
+                <button class="btn-icon" onclick="carregarDadosTime()" title="Atualizar"><i class="ph ph-arrows-clockwise"></i></button>
+            </div>
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Membro</th>
+                            <th>Atividade Atual / Projeto</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="team-status-list">
+                        <tr><td colspan="3" class="text-center dim">Sincronizando com o backend...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card" style="text-align: center;">
+            <div class="card-header">
+                <h3>Ocupação da EJ</h3>
+            </div>
+            
+            <div class="circle-chart-container">
+                <div id="team-occupancy-chart" class="circle-chart" style="background: conic-gradient(var(--primary) 0%, #27272a 0deg);">
+                    <div class="chart-content">
+                        <strong id="occupancy-percent">0%</strong>
+                        <span>Carga Total</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-grid" style="margin-top: 20px;">
+                <div class="stat-box">
+                    <span class="dim small">Ativos Agora</span>
+                    <strong id="count-active">0</strong>
+                </div>
+                <div class="stat-box">
+                    <span class="dim small">Em Pausa</span>
+                    <strong id="count-away">0</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+                <section id="sec-reembolsos" class="tab-content">
+    <div class="header-main">
+        <div class="flex-between">
+            <div>
+                <h1>Reembolsos</h1>
+                <p class="dim">Solicite e acompanhe seus pedidos de reembolso</p>
+            </div>
+            <button class="btn-primary" onclick="openModal('modal-reembolso')">
+                <i class="ph ph-hand-coins"></i> Nova Solicitação
+            </button>
+        </div>
+    </div>
+
+    <div class="dashboard-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 25px;">
+        <div class="card" style="border-left: 4px solid var(--primary);">
+            <p class="dim small">Total Pendente</p>
+            <h2 style="margin-top: 5px;">R$ 450,00</h2>
+        </div>
+        <div class="card" style="border-left: 4px solid var(--success);">
+            <p class="dim small">Total Pago</p>
+            <h2 style="margin-top: 5px;">R$ 1.280,00</h2>
+        </div>
+        <div class="card">
+            <p class="dim small">Pedidos este mês</p>
+            <h2 style="margin-top: 5px;">04</h2>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3>Histórico de Solicitações</h3>
+        </div>
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Descrição</th>
+                        <th>Categoria</th>
+                        <th>Valor</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="reembolso-list-body">
+                    <tr>
+                        <td>12/03/2026</td>
+                        <td>Uber para Visita Técnica</td>
+                        <td class="dim">Transporte</td>
+                        <td>R$ 25,90</td>
+                        <td><span class="status-badge" style="background: #f59e0b22; color: #f59e0b;">Análise</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+   <div id="modal-reembolso" class="modal">
+    <div class="modal-content" style="max-width: 550px;">
+        <div class="modal-header" style="margin-bottom: 25px;">
+            <div>
+                <h3 style="font-size: 1.5rem;">Nova Solicitação</h3>
+                <p class="dim">Preencha os dados para análise do financeiro.</p>
+            </div>
+            <button class="close-btn" onclick="closeModal('modal-reembolso')">&times;</button>
+        </div>
+        
+        <form id="reembolso-form">
+            <div class="input-group">
+                <label class="small-label">TÍTULO DO GASTO</label>
+                <input type="text" id="ref-title" placeholder="Ex: Viagem técnica à João Pessoa" class="dark-input" required>
+            </div>
+
+            <div class="input-group" style="margin-top: 15px;">
+                <label class="small-label">DESCRIÇÃO DETALHADA</label>
+                <textarea id="ref-description" rows="3" class="dark-input" placeholder="Descreva os detalhes do consumo..."></textarea>
+            </div>
+
+            <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+                <div class="input-group">
+                    <label class="small-label">VALOR (R$)</label>
+                    <input type="number" id="ref-value" step="0.01" class="dark-input" placeholder="0,00">
+                </div>
+                <div class="input-group">
+                    <label class="small-label">CATEGORIA</label>
+                    <select id="ref-category" class="dark-input">
+                        <option value="Transporte">🚗 Transporte</option>
+                        <option value="Alimentação">🍴 Alimentação</option>
+                        <option value="Material">📦 Material</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="input-group" style="margin-top: 15px;">
+                <label class="small-label">CHAVE PIX</label>
+                <input type="text" id="ref-pix" class="dark-input" placeholder="Onde você quer receber?">
+            </div>
+
+            <div class="input-group" style="margin-top: 20px;">
+                <label class="small-label">COMPROVANTE FISCAL</label>
+                <div class="upload-area" onclick="document.getElementById('file-reembolso').click()">
+                    <div style="background: var(--input-bg); padding: 12px; border-radius: 50%;">
+                        <i class="ph ph-cloud-arrow-up" style="font-size: 24px; color: var(--primary);"></i>
+                    </div>
+                    <p id="file-name-display" style="font-size: 14px;">Arraste ou clique para anexar</p>
+                    <span class="dim" style="font-size: 11px;">PDF, PNG ou JPG (máx. 5MB)</span>
+                    <input type="file" id="file-reembolso" style="display: none;" accept=".pdf,.png,.jpg">
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 30px;">
+                <button type="button" class="btn-icon" style="background: transparent; border: 1px solid var(--border);" onclick="closeModal('modal-reembolso')">Cancelar</button>
+                <button type="submit" class="btn-primary" style="padding: 12px 30px;">Gerar Solicitação</button>
+            </div>
+        </form>
+    </div>
+</div>
+            
+</section>
+
+                <section id="sec-faltas" class="dashboard-section tab-content" style="display:none;">
+    <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+        <div>
+            <h2 style="font-size: 1.8rem; color: white;">Gestão de Faltas</h2>
+            <p class="dim">Controle de ausências e comprovantes médicos.</p>
+        </div>
+        <button class="btn-primary" onclick="openModal('modal-falta')">
+            <i class="ph ph-calendar-plus"></i> Justificar Ausência
+        </button>
+    </div>
+
+    <div class="card-panel">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Motivo</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="tabela-faltas-body">
+                </tbody>
+        </table>
+    </div>
+</section>
+
+<div id="modal-falta" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header" style="margin-bottom: 20px;">
+            <h3>Justificar Falta</h3>
+            <button class="close-btn" onclick="closeModal('modal-falta')">&times;</button>
+        </div>
+
+        <form id="falta-form">
+            <div class="input-group">
+                <label class="small-label">DATA DA AUSÊNCIA</label>
+                <input type="date" id="abs-date" class="dark-input" required>
+            </div>
+
+            <div class="input-group" style="margin-top: 15px;">
+                <label class="small-label">MOTIVO PRINCIPAL</label>
+                <select id="abs-reason" class="dark-input">
+                    <option value="Médico">🏥 Atestado Médico</option>
+                    <option value="Luto">🕯️ Luto / Gala</option>
+                    <option value="Pessoal">👤 Assunto Pessoal</option>
+                </select>
+            </div>
+
+            <div class="input-group" style="margin-top: 15px;">
+                <label class="small-label">DETALHES (OPCIONAL)</label>
+                <textarea id="abs-desc" rows="2" class="dark-input" placeholder="Breve explicação..."></textarea>
+            </div>
+
+            <div class="input-group" style="margin-top: 20px;">
+                <label class="small-label">ATESTADO / COMPROVANTE</label>
+                <div class="upload-area" onclick="document.getElementById('file-abs').click()">
+                    <i class="ph ph-file-arrow-up" style="font-size: 24px; color: var(--primary);"></i>
+                    <p id="abs-file-display" style="font-size: 14px;">Clique para subir o arquivo</p>
+                    <input type="file" id="file-abs" style="display: none;" accept=".pdf,.jpg,.jpeg">
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 25px;">
+                <button type="button" class="btn-icon" onclick="closeModal('modal-falta')">Cancelar</button>
+                <button type="submit" class="btn-primary">Enviar Justificativa</button>
+            </div>
+        </form>
+    </div>
+</div>
+    <script src="script.js"></script>
+</body>
+</html>
