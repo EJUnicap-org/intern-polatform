@@ -8,13 +8,44 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
 <body class="dark-theme">
-    <div class="container">
+
+    <div id="login-container" class="login-overlay">
+        <div class="login-card">
+            <div class="logo-login">
+                <i class="ph-fill ph-shield-check"></i>
+                <strong>EJ UNICAP</strong>
+            </div>
+            <p class="dim">Gestão Interna | Autenticação</p>
+            
+            <form id="form-login">
+                <div class="input-group">
+                    <label>E-mail / Username</label>
+                    <input type="text" id="user-email" placeholder="seu@email.com" required class="dark-input">
+                </div>
+                
+                <div class="input-group">
+                    <label>Senha</label>
+                    <input type="password" id="user-pass" placeholder="••••••••" required class="dark-input">
+                </div>
+                
+                <button type="submit" class="btn-primary" id="btn-entrar" style="width: 100%; margin-top: 20px;">
+                    Acessar Sistema
+                </button>
+            </form>
+            <p id="login-error" style="color: #ff4d4d; display: none; margin-top: 15px; font-size: 0.85rem;">
+                Credenciais inválidas. Tente novamente.
+            </p>
+        </div>
+    </div>
+
+    <div class="container" id="main-dashboard" style="display: none;">
+        
         <aside class="sidebar">
             <div class="logo">
                 <i class="ph-fill ph-shield-check"></i>
                 <div><strong>EJ UNICAP</strong><span>Gestão Interna</span></div>
             </div>
-            
+
             <nav class="menu">
                 <p class="menu-label">Operacional</p>
                 <a href="#" class="nav-link active" data-target="acompanhamento"><i class="ph ph-chart-line"></i> Acompanhamento</a>
@@ -28,9 +59,15 @@
                 <a href="#" class="nav-link" data-target="reembolsos"><i class="ph ph-hand-coins"></i> Reembolsos</a>
                 <a href="#" class="nav-link" data-target="faltas"><i class="ph ph-calendar-x"></i> Faltas</a>
                 <a href="#" class="nav-link" data-target="diagnostico"><i class="ph ph-math-operations"></i> Diagnóstico PERT</a>
+
+                <div class="menu-divider" style="margin-top: 20px; border-top: 1px solid #262626; padding-top: 10px;"></div>
+                <a href="#" id="btn-logout" class="nav-link" style="color: #ff4d4d;">
+                    <i class="ph ph-sign-out"></i> Sair da Conta
+                </a>
             </nav>
         </aside>
 
+    
         <main class="content">
             <header class="top-bar">
                 <div class="breadcrumb">Dashboard / <span id="page-title">Acompanhamento</span></div>

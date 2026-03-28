@@ -1,5 +1,78 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // === 1. NAVEGAÇÃO DE ABAS ===
+    // === 0. PROTEÇÃO DE ACESSO (JWT) ===
+    const token = localStorage.getItem('token_ej');
+    
+    // Se já tiver token, pula o login. Se não, mostra a tela de login.
+    if (token) {
+        entrarNoSistema();
+    } else {
+        exibirLogin();
+    }
+
+    // === 1. LÓGICA DE LOGIN (AUTENTICAÇÃO) ===
+    const formLogin = document.getElementById('form-login');
+    if (formLogin) {
+        formLogin.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('user-email').value;
+            const senha = document.getElementById('user-pass').value;
+            const btn = document.getElementById('btn-entrar');
+            const errorMsg = document.getElementById('login-error');
+            
+            btn.innerText = "Autenticando...";
+            btn.disabled = true;
+            if(errorMsg) errorMsg.style.display = 'none';
+
+            // --- MODO DE TESTE (ACESSO REMOTO SIMULADO) ---
+            // Login: admin@ejunicap.com | Senha: unicap2026
+            if (email === "admin@ejunicap.com" && senha === "unicap2026") {
+                setTimeout(() => {
+                    localStorage.setItem('token_ej', 'token_teste_unicap_2026');
+                    entrarNoSistema();
+                    btn.innerText = "Acessar Sistema";
+                    btn.disabled = false;
+                }, 800); // Simula um pequeno delay de rede
+                return;
+            }
+            // --- FIM DO MODO DE TESTE ---
+
+            const corpo = new URLSearchParams();
+            corpo.append('username', email);
+            corpo.append('password', senha);
+
+            try {
+                const resposta = await fetch('http://localhost:8000/auth/login', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: corpo
+                });
+
+                const dados = await resposta.json();
+
+                if (resposta.ok && dados.access_token) {
+                    localStorage.setItem('token_ej', dados.access_token);
+                    entrarNoSistema();
+                } else {
+                    if(errorMsg) errorMsg.style.display = 'block';
+                }
+            } catch (err) {
+                console.error("Erro no servidor:", err);
+                alert("Erro ao conectar com a API oficial. Use o acesso de teste.");
+            } finally {
+                btn.innerText = "Acessar Sistema";
+                btn.disabled = false;
+            }
+        });
+    }
+
+    // === 2. BOTÃO DE SAIR (LOGOUT) ===
+    document.getElementById('btn-logout')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        localStorage.removeItem('token_ej'); // Limpa o token conforme pedido no WhatsApp
+        window.location.reload(); // Recarrega para voltar ao login
+    });
+
+    // === 3. NAVEGAÇÃO ENTRE ABAS ===
     const links = document.querySelectorAll('.nav-link');
     const sections = document.querySelectorAll('.tab-content');
     const titleDisplay = document.getElementById('page-title');
@@ -8,7 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
         link.addEventListener('click', function(e) {
             e.preventDefault();
             const targetId = this.getAttribute('data-target');
-            
+            if (!targetId) return;
+
             links.forEach(l => l.classList.remove('active'));
             sections.forEach(s => {
                 s.classList.remove('active');
@@ -23,167 +97,93 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (titleDisplay) titleDisplay.innerText = this.innerText.trim();
             }
 
+            // Carregamentos automáticos ao abrir a aba
             if (targetId === 'leads') carregarLeads();
             if (targetId === 'time') carregarDadosTime();
         });
     });
 
-    // === 2. RELÓGIOS DINÂMICOS ===
-    setInterval(() => {
-        const clocks = ['clock', 'ponto-clock'];
-        clocks.forEach(id => {
-            const el = document.getElementById(id);
-            if(el) el.innerText = new Date().toLocaleTimeString('pt-BR');
-        });
-
-        const dateDisplay = document.getElementById('ponto-date');
-        if (dateDisplay) {
-            dateDisplay.innerText = new Date().toLocaleDateString('pt-BR', { 
-                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
-            });
-        }
-    }, 1000);
-
-    // === 3. REEMBOLSOS E FALTAS ===
-    const reembolsoForm = document.getElementById('reembolso-form');
-    if (reembolsoForm) {
-        reembolsoForm.addEventListener('submit', enviarReembolso);
-    }
-
-    const fileReembolso = document.getElementById('file-reembolso');
-    if (fileReembolso) {
-        fileReembolso.addEventListener('change', (e) => {
-            const name = e.target.files[0]?.name || "Clique para anexar";
-            document.getElementById('file-name-display').innerText = name;
-        });
-    }
-
-    carregarTabelaReembolsos();
-    carregarTabelaFaltas();
-
-    // === 4. DIAGNÓSTICO (PERT/CPM) ===
-    const btnAddTask = document.getElementById('add-task-row');
-    const taskBody = document.getElementById('task-body');
-
-    if (btnAddTask && taskBody) {
-        btnAddTask.addEventListener('click', () => {
-            const newRow = document.createElement('tr');
-            newRow.innerHTML = `
-                <td><input type="text" class="dark-input sm" placeholder="ID"></td>
-                <td><input type="text" class="dark-input sm" placeholder="-"></td>
-                <td><input type="number" class="dark-input sm" placeholder="0"></td>
-                <td><input type="number" class="dark-input sm" placeholder="0"></td>
-                <td><input type="number" class="dark-input sm" placeholder="0"></td>
-                <td>
-                    <button class="btn-icon-danger" onclick="this.parentElement.parentElement.remove()">
-                        <i class="ph ph-trash"></i>
-                    </button>
-                </td>`;
-            taskBody.appendChild(newRow);
-        });
-    }
-
+    // === 4. CÁLCULO DIAGNÓSTICO (PERT/CPM) ===
     const btnCalculate = document.getElementById('btn-calculate-diag');
     if (btnCalculate) {
-        btnCalculate.addEventListener('click', calcularPertCPM);
-    }
+        btnCalculate.addEventListener('click', () => {
+            const rows = document.querySelectorAll('#task-body tr');
+            let totalTime = 0;
 
-    const btnPdf = document.getElementById('btn-pdf-diag');
-    if (btnPdf) {
-        btnPdf.addEventListener('click', () => {
-            if (document.getElementById('pert-total').innerText === "-- dias") {
-                alert("Gere o diagnóstico antes de imprimir!");
-                return;
-            }
-            window.print();
+            rows.forEach(row => {
+                const inputs = row.querySelectorAll('input');
+                const o = parseFloat(inputs[2]?.value) || 0;
+                const m = parseFloat(inputs[3]?.value) || 0;
+                const p = parseFloat(inputs[4]?.value) || 0;
+
+                if (o || m || p) {
+                    // Te = (O + 4M + P) / 6
+                    totalTime += (o + (4 * m) + p) / 6;
+                }
+            });
+
+            const displayTotal = document.getElementById('pert-total');
+            if(displayTotal) displayTotal.innerText = `${totalTime.toFixed(1)} dias`;
+            
+            const meta = totalTime * 0.75;
+            const metaDisplay = document.getElementById('ccpm-meta');
+            const bufferDisplay = document.getElementById('ccpm-buffer');
+            
+            if(metaDisplay) metaDisplay.innerText = `${meta.toFixed(1)} dias`;
+            if(bufferDisplay) bufferDisplay.innerText = `${(totalTime - meta).toFixed(1)} dias`;
         });
     }
 });
 
-// === FUNÇÕES DE APOIO (LÓGICA FORA DO DOM) ===
+// === FUNÇÕES AUXILIARES GLOBAIS ===
 
-async function enviarReembolso(event) {
-    event.preventDefault();
-    const file = document.getElementById('file-reembolso').files[0];
-    if (!file) return alert("Anexe o comprovante!");
+function entrarNoSistema() {
+    const login = document.getElementById('login-container');
+    const dash = document.getElementById('main-dashboard');
+    if (login) login.style.display = 'none';
+    if (dash) dash.style.display = 'flex';
+}
 
-    const dados = {
-        title: document.getElementById('ref-title').value,
-        description: document.getElementById('ref-description').value,
-        category: document.getElementById('ref-category').value,
-        value: parseFloat(document.getElementById('ref-value').value),
-        pix_key: document.getElementById('ref-pix').value,
-        file_extension: `.${file.name.split('.').pop()}`
+function exibirLogin() {
+    const login = document.getElementById('login-container');
+    const dash = document.getElementById('main-dashboard');
+    if (login) login.style.display = 'flex';
+    if (dash) dash.style.display = 'none';
+}
+
+/**
+ * Função Mestre para Requisições com Token (Segurança solicitada pelo time)
+ */
+async function fetchSeguro(url, opcoes = {}) {
+    const token = localStorage.getItem('token_ej');
+    const headers = {
+        ...opcoes.headers,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
     };
-
-    try {
-        const res = await fetch('/api/reimbursements', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dados)
-        });
-        const { presigned_url } = await res.json();
-        
-        await fetch(presigned_url.upload_url, {
-            method: presigned_url.method,
-            body: file,
-            headers: { 'Content-Type': file.type }
-        });
-
-        alert("Sucesso!");
-        closeModal('modal-reembolso');
-        event.target.reset();
-        carregarTabelaReembolsos();
-    } catch (err) { console.error(err); }
+    return fetch(url, { ...opcoes, headers });
 }
 
-function calcularPertCPM() {
-    const rows = document.querySelectorAll('#task-body tr');
-    let totalTime = 0;
-    let totalVar = 0;
-
-    rows.forEach(row => {
-        const v = Array.from(row.querySelectorAll('input')).map(i => parseFloat(i.value) || 0);
-        if (v[2] || v[3] || v[4]) {
-            totalTime += (v[2] + (4 * v[3]) + v[4]) / 6;
-            totalVar += Math.pow((v[4] - v[2]) / 6, 2);
-        }
-    });
-
-    document.getElementById('pert-total').innerText = `${totalTime.toFixed(1)} dias`;
-    document.getElementById('pert-safety').innerText = totalVar.toFixed(2);
-    
-    const meta = totalTime * 0.75;
-    document.getElementById('ccpm-meta').innerText = `${meta.toFixed(1)} dias`;
-    document.getElementById('ccpm-buffer').innerText = `${(totalTime - meta).toFixed(1)} dias`;
-    document.getElementById('buffer-fill').style.width = '100%';
-    document.getElementById('buffer-status').innerText = "Estável";
-}
-
+/**
+ * Exemplo de uso do Fetch Seguro para carregar dados do time
+ */
 async function carregarDadosTime() {
-    const token = localStorage.getItem('access_token');
-    const list = document.getElementById('team-status-list');
-    if (!token || !list) return;
-
     try {
-        const res = await fetch('http://localhost:8000/team/status', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const res = await fetchSeguro('http://localhost:8000/team/status');
+        if (!res.ok) throw new Error("Erro na resposta do servidor");
         const data = await res.json();
-        list.innerHTML = data.membros.map(m => `
-            <tr>
-                <td><div style="display:flex;align-items:center;gap:10px">
-                    <div class="avatar-mini">${m.iniciais}</div>${m.nome}
-                </div></td>
-                <td class="dim">${m.atividade}</td>
-                <td><span class="status-badge ${m.status === 'Ativo' ? 'status-lead' : 'status-away'}">${m.status}</span></td>
-            </tr>`).join('');
         
-        document.getElementById('team-occupancy-chart').style.background = `conic-gradient(var(--primary) ${data.porcentagem_geral}%, #27272a 0deg)`;
-        document.getElementById('occupancy-percent').innerText = `${data.porcentagem_geral}%`;
-    } catch (e) { console.error(e); }
+        const list = document.getElementById('team-status-list');
+        if (list && data.membros) {
+            list.innerHTML = data.membros.map(m => `
+                <tr>
+                    <td>${m.nome}</td>
+                    <td>${m.atividade}</td>
+                    <td>${m.status}</td>
+                </tr>
+            `).join('');
+        }
+    } catch (e) {
+        console.error("Erro ao carregar time:", e);
+    }
 }
-
-function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-// Funções carregarTabelaReembolsos/Faltas permanecem como as anteriores
