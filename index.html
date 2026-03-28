@@ -27,6 +27,7 @@
                 <a href="#" class="nav-link" data-target="time"><i class="ph ph-users"></i> Visão do Time</a>
                 <a href="#" class="nav-link" data-target="reembolsos"><i class="ph ph-hand-coins"></i> Reembolsos</a>
                 <a href="#" class="nav-link" data-target="faltas"><i class="ph ph-calendar-x"></i> Faltas</a>
+                <a href="#" class="nav-link" data-target="diagnostico"><i class="ph ph-math-operations"></i> Diagnóstico PERT</a>
             </nav>
         </aside>
 
@@ -713,6 +714,106 @@
         </form>
     </div>
 </div>
+<section id="sec-diagnostico" class="tab-content">
+    <div class="header-main">
+        <div class="flex-between">
+            <div>
+                <h1>Diagnóstico de Projeto</h1>
+                <p class="dim">Análise matemática via PERT/CPM e Corrente Crítica (CCPM)</p>
+            </div>
+            <div class="action-buttons" id="admin-actions-diag">
+                <button class="btn-icon" id="btn-pdf-diag" title="Baixar PDF">
+                    <i class="ph ph-file-pdf"></i>
+                </button>
+                <button class="btn-primary" id="btn-calculate-diag">
+                    <i class="ph ph-calculator"></i> Gerar Diagnóstico
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="col-left">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Matriz de Tarefas</h3>
+                    <button class="btn-outline-sm" id="add-task-row">+ Tarefa</button>
+                </div>
+                <div class="table-container">
+                    <table class="table task-input-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Predecessoras</th>
+                                <th title="Otimista">O</th>
+                                <th title="Mais Provável">M</th>
+                                <th title="Pessimista">P</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="task-body">
+                            <tr>
+                                <td><input type="text" class="dark-input sm" placeholder="A"></td>
+                                <td><input type="text" class="dark-input sm" placeholder="-"></td>
+                                <td><input type="number" class="dark-input sm" placeholder="2"></td>
+                                <td><input type="number" class="dark-input sm" placeholder="4"></td>
+                                <td><input type="number" class="dark-input sm" placeholder="6"></td>
+                                <td>
+                                    <button class="btn-icon-danger" onclick="this.parentElement.parentElement.remove()">
+                                        <i class="ph ph-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-right">
+            <div class="card result-card pert" style="border-left: 4px solid #eab308;">
+                <div class="flex-between">
+                    <h3>Visão PERT</h3>
+                    <span class="badge">Conservadora</span>
+                </div>
+                <div class="stats-grid" style="margin-top: 15px;">
+                    <div class="stat-box">
+                        <span class="dim small">Tempo Total (Te)</span>
+                        <strong id="pert-total">-- dias</strong>
+                    </div>
+                    <div class="stat-box">
+                        <span class="dim small">Variância Total</span>
+                        <strong class="text-yellow" id="pert-safety">--</strong>
+                    </div>
+                </div>
+                <p class="dim small" style="margin-top: 10px;">Caminho Crítico: <span id="critical-path-text">---</span></p>
+            </div>
+
+            <div class="card result-card ccpm" style="border-left: 4px solid #3b82f6; margin-top: 20px;">
+                <div class="flex-between">
+                    <h3>Visão CCPM</h3>
+                    <span class="badge" style="color: #3b82f6; border-color: #3b82f6;">Agressiva</span>
+                </div>
+                <div class="stats-grid" style="margin-top: 15px;">
+                    <div class="stat-box">
+                        <span class="dim small">Tempo Meta</span>
+                        <strong class="text-green" id="ccpm-meta">-- dias</strong>
+                    </div>
+                    <div class="stat-box">
+                        <span class="dim small">Pulmão (Buffer)</span>
+                        <strong id="ccpm-buffer">--</strong>
+                    </div>
+                </div>
+                <div class="buffer-container" style="margin-top: 15px;">
+                    <div class="progress-bar">
+                        <div id="buffer-fill" class="progress-fill" style="width: 0%; background: #22c55e;"></div>
+                    </div>
+                    <p class="dim x-small" style="margin-top: 5px;">Status do Pulmão: <span id="buffer-status">Aguardando cálculo</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
     <script src="script.js"></script>
 </body>
 </html>

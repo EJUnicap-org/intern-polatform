@@ -582,3 +582,119 @@ body { background: var(--bg); color: var(--text); overflow: hidden; height: 100v
 #tabela-faltas-body tr {
     animation: fadeInRow 0.4s ease forwards;
 }
+/* Tabela de Tarefas */
+.task-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.task-table th {
+    text-align: left;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    padding: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.table-input {
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    color: white;
+    padding: 8px;
+    border-radius: 4px;
+    width: 100%;
+}
+
+.table-input.sm { width: 40px; text-align: center; }
+.table-input.num { width: 60px; }
+
+/* Dashboard de Resultados */
+.results-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 24px;
+}
+
+.diagnostic-card {
+    border-left: 4px solid var(--border-color);
+}
+
+.diagnostic-card.pert { border-left-color: #eab308; } /* Amarelo */
+.diagnostic-card.ccpm { border-left-color: #3b82f6; } /* Azul */
+
+.stat-row {
+    display: flex;
+    gap: 40px;
+    margin: 20px 0;
+}
+
+.stat-item label {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-bottom: 5px;
+}
+
+.stat-item .value {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+/* Cores de Status */
+.text-green { color: #22c55e; }
+.text-yellow { color: #eab308; }
+.text-blue { color: #3b82f6; }
+
+/* Barra de Pulmão (Buffer) */
+.buffer-bar {
+    height: 8px;
+    background: #27272a;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+
+.buffer-bar .fill.green { background: #22c55e; }
+@media print {
+    /* Esconde tudo o que não é o diagnóstico */
+    body * {
+        visibility: hidden;
+    }
+    
+    /* Mostra apenas a seção de diagnóstico e o que estiver dentro dela */
+    #sec-diagnostico, #sec-diagnostico * {
+        visibility: visible;
+    }
+
+    #sec-diagnostico {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: white !important;
+        color: black !important;
+    }
+
+    /* Esconde os botões de ação (Calcular, PDF, +Tarefa) no PDF */
+    .action-buttons, #add-task-row, .btn-icon-danger {
+        display: none !important;
+    }
+
+    /* Ajusta os cards para ficarem brancos com borda no papel */
+    .card {
+        border: 1px solid #ccc !important;
+        background: #fff !important;
+        color: #000 !important;
+        box-shadow: none !important;
+        break-inside: avoid; /* Evita quebrar o card no meio da página */
+    }
+    
+    .dark-input {
+        border: none !important;
+        background: transparent !important;
+        color: black !important;
+    }
+}
