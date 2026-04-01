@@ -103,38 +103,104 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // === 4. CÁLCULO DIAGNÓSTICO (PERT/CPM) ===
+    // === 4. CÁLCULO DIAGNÓSTICO (INTEGRAÇÃO REAL COM A API) ===
     const btnCalculate = document.getElementById('btn-calculate-diag');
     if (btnCalculate) {
-        btnCalculate.addEventListener('click', () => {
+        btnCalculate.addEventListener('click', async () => {
             const rows = document.querySelectorAll('#task-body tr');
-            let totalTime = 0;
+            const payload = { tasks: {} };
 
+            // Monta o dicionário estrito que o Backend exige
             rows.forEach(row => {
                 const inputs = row.querySelectorAll('input');
-                const o = parseFloat(inputs[2]?.value) || 0;
-                const m = parseFloat(inputs[3]?.value) || 0;
-                const p = parseFloat(inputs[4]?.value) || 0;
+                const id = inputs[0].value.trim();
+                const desc = inputs[1].value.trim() || "Sem descrição";
+                const predStr = inputs[2].value.trim();
+                const o = parseFloat(inputs[3].value) || 0;
+                const m = parseFloat(inputs[4].value) || 0;
+                const p = parseFloat(inputs[5].value) || 0;
 
-                if (o || m || p) {
-                    // Te = (O + 4M + P) / 6
-                    totalTime += (o + (4 * m) + p) / 6;
+                if (id) {
+                    payload.tasks[id] = {
+                        desc: desc,
+                        pred: predStr === "-" || predStr === "" ? [] : predStr.split(',').map(s => s.trim()),
+                        O: o,
+                        M: m,
+                        P: p
+                    };
                 }
             });
 
-            const displayTotal = document.getElementById('pert-total');
-            if(displayTotal) displayTotal.innerText = `${totalTime.toFixed(1)} dias`;
-            
-            const meta = totalTime * 0.75;
-            const metaDisplay = document.getElementById('ccpm-meta');
-            const bufferDisplay = document.getElementById('ccpm-buffer');
-            
-            if(metaDisplay) metaDisplay.innerText = `${meta.toFixed(1)} dias`;
-            if(bufferDisplay) bufferDisplay.innerText = `${(totalTime - meta).toFixed(1)} dias`;
+            if (Object.keys(payload.tasks).length === 0) {
+                alert("Adicione pelo menos uma tarefa para o cálculo.");
+                return;
+            }
+
+            btnCalculate.innerHTML = '<i class="ph ph-spinner-gap"></i> Calculando...';
+            btnCalculate.disabled = true;
+
+            try {
+                // Dispara o JSON para o motor matemático no servidor (Assumindo Projeto 1)
+                const res = await fetchSeguro('https://api-intern-platform.onrender.com/projects/1/diagnostic', {
+                    method: 'PATCH',
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) {
+                    const errorMsg = await res.json();
+                    throw new Error(JSON.stringify(errorMsg.detail));
+                }
+
+                const data = await res.json();
+
+                // Extrai as visões híbridas do JSON devolvido pelo seu backend
+                const pert = data.pert_classico.metricas_globais;
+                const ccpm = data.corrente_critica.metricas_ccpm;
+
+                // Renderiza a verdade matemática na tela
+                document.getElementById('pert-total').innerText = `${pert.tempo_enxuto_horas} h`;
+                document.getElementById('pert-safety').innerText = `${pert.margem_seguranca_horas} h`;
+                document.getElementById('critical-path-text').innerText = data.pert_classico.caminho_critico.join(' -> ');
+
+                document.getElementById('ccpm-meta').innerText = `${ccpm.tempo_agressivo_projeto_horas} h`;
+                document.getElementById('ccpm-buffer').innerText = `${ccpm.project_buffer_horas} h`;
+                document.getElementById('buffer-status').innerText = "Matematicamente Protegido";
+
+            } catch (err) {
+                console.error("Erro da API:", err);
+                alert("O cálculo falhou. Verifique se as dependências (Predecessoras) existem e não formam um loop circular.\n\nDetalhe: " + err.message);
+            } finally {
+                btnCalculate.innerHTML = '<i class="ph ph-calculator"></i> Gerar Diagnóstico';
+                btnCalculate.disabled = false;
+            }
         });
     }
-});
 
+    // === 5. ADICIONAR NOVA TAREFA NA MATRIZ ===
+    const btnAddTask = document.getElementById('add-task-row');
+    const taskBody = document.getElementById('task-body');
+
+    if (btnAddTask && taskBody) {
+        btnAddTask.addEventListener('click', (e) => {
+            e.preventDefault(); // Previne qualquer comportamento padrão indesejado
+            
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td><input type="text" class="dark-input sm" placeholder="ID (Ex: E)"></td>
+                <td><input type="text" class="dark-input" placeholder="Nova Tarefa"></td>
+                <td><input type="text" class="dark-input sm" placeholder="-"></td>
+                <td><input type="number" class="dark-input sm" placeholder="0"></td>
+                <td><input type="number" class="dark-input sm" placeholder="0"></td>
+                <td><input type="number" class="dark-input sm" placeholder="0"></td>
+                <td>
+                    <button type="button" class="btn-icon-danger" onclick="this.parentElement.parentElement.remove()">
+                        <i class="ph ph-trash"></i>
+                    </button>
+                </td>
+            `;
+            taskBody.appendChild(newRow);
+        });
+    }
 // === FUNÇÕES AUXILIARES GLOBAIS ===
 
 function entrarNoSistema() {
@@ -187,3 +253,4 @@ async function carregarDadosTime() {
         console.error("Erro ao carregar time:", e);
     }
 }
+});

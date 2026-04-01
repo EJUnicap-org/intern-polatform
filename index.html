@@ -781,28 +781,28 @@
                         <thead>
                             <tr>
                                 <th>ID</th>
-                                <th>Predecessoras</th>
+                                <th>Descrição</th> <th>Predecessoras</th>
                                 <th title="Otimista">O</th>
                                 <th title="Mais Provável">M</th>
                                 <th title="Pessimista">P</th>
-                                <th></th>
+                            <th></th>
                             </tr>
                         </thead>
-                        <tbody id="task-body">
-                            <tr>
-                                <td><input type="text" class="dark-input sm" placeholder="A"></td>
-                                <td><input type="text" class="dark-input sm" placeholder="-"></td>
-                                <td><input type="number" class="dark-input sm" placeholder="2"></td>
-                                <td><input type="number" class="dark-input sm" placeholder="4"></td>
-                                <td><input type="number" class="dark-input sm" placeholder="6"></td>
-                                <td>
-                                    <button class="btn-icon-danger" onclick="this.parentElement.parentElement.remove()">
-                                        <i class="ph ph-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+    <tbody id="task-body">
+        <tr>
+            <td><input type="text" class="dark-input sm" placeholder="A"></td>
+            <td><input type="text" class="dark-input" placeholder="Levantamento"></td> <td><input type="text" class="dark-input sm" placeholder="-"></td>
+            <td><input type="number" class="dark-input sm" placeholder="2"></td>
+            <td><input type="number" class="dark-input sm" placeholder="4"></td>
+            <td><input type="number" class="dark-input sm" placeholder="6"></td>
+            <td>
+                <button class="btn-icon-danger" onclick="this.parentElement.parentElement.remove()">
+                    <i class="ph ph-trash"></i>
+                </button>
+            </td>
+        </tr>
+    </tbody>
+</table>
                 </div>
             </div>
         </div>
