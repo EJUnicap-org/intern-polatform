@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
             corpo.append('password', senha);
 
             try {
-                const resposta = await fetch('http://localhost:8000/auth/login', { 
+                const resposta = await fetch('https://api-intern-platform.onrender.com/auth/login', { 
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: corpo
@@ -235,7 +235,7 @@ async function fetchSeguro(url, opcoes = {}) {
  */
 async function carregarDadosTime() {
     try {
-        const res = await fetchSeguro('http://localhost:8000/team/status');
+        const res = await fetchSeguro('https://api-intern-platform.onrender.com/team/status');
         if (!res.ok) throw new Error("Erro na resposta do servidor");
         const data = await res.json();
         
