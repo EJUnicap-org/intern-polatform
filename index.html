@@ -60,12 +60,63 @@
             <div id="tab-container">
                 
                 <section id="sec-acompanhamento" class="tab-content active">
-                    <div class="header-main"><h1>Acompanhamento</h1><p class="dim">Visão geral das frentes em andamento</p></div>
-                    <div class="dashboard-grid-1-6">
-                        <div class="card"><div class="card-header"><h3>Projetos</h3></div><p class="dim">Aguardando API de Projetos.</p></div>
-                        <div class="card"><div class="card-header"><h3>Alertas</h3></div><p class="dim">Sem alertas.</p></div>
-                    </div>
-                </section>
+    <div class="header-main flex-between">
+        <div>
+            <h1>Gestão de Projetos</h1>
+            <p class="dim">Acompanhamento e criação de frentes operacionais</p>
+        </div>
+        <button class="btn-primary" onclick="openModal('modal-projeto')" style="width: auto;">
+            <i class="ph ph-plus"></i> Novo Projeto
+        </button>
+    </div>
+
+    <div class="card table-container">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Nome do Projeto</th>
+                    <th>Descrição</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="projetos-list-body">
+                <tr><td colspan="4" class="text-center dim">Carregando projetos do servidor...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<div id="modal-projeto" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Criar Novo Projeto</h3>
+            <button class="close-btn" onclick="closeModal('modal-projeto')">&times;</button>
+        </div>
+        <form id="projeto-form">
+            <div class="input-group">
+                <label>Nome do Projeto</label>
+                <input type="text" id="proj-name" class="dark-input" required placeholder="Ex: Sistema de Gestão Interna">
+            </div>
+            <div class="input-group">
+                <label>Descrição</label>
+                <textarea id="proj-desc" class="dark-input" rows="3" placeholder="Qual o escopo desta entrega?"></textarea>
+            </div>
+            <div class="input-group">
+                <label>Status Inicial</label>
+                <select id="proj-status" class="dark-input">
+                    <option value="Planejamento">Planejamento</option>
+                    <option value="Execução">Execução</option>
+                    <option value="Pausado">Pausado</option>
+                </select>
+            </div>
+            <div class="flex-between" style="justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                <button type="button" class="btn-icon" onclick="closeModal('modal-projeto')" style="width: auto; padding: 0 15px;">Cancelar</button>
+                <button type="submit" class="btn-primary" style="width: auto;">Salvar Projeto</button>
+            </div>
+        </form>
+    </div>
+</div>
 
                 <section id="sec-leads" class="tab-content">
                     <div class="header-main flex-between">

@@ -190,6 +190,50 @@ async function carregarTabelaFaltas() {
     } catch (e) { tbody.innerHTML = `<tr><td colspan="3" class="text-center dim">Modo Offline / Sem API configurada.</td></tr>`; }
 }
 
+async function carregarProjetosAcompanhamento() {
+    const listBody = document.getElementById('projetos-list-body');
+    if (!listBody) return;
+    listBody.innerHTML = '<tr><td colspan="4" class="text-center dim">Buscando projetos...</td></tr>';
+    
+    try {
+        const res = await fetchSeguro('/projects');
+        if (!res.ok) throw new Error("Erro ao buscar projetos");
+        const projetos = await res.json();
+        
+        if (projetos.length === 0) {
+            listBody.innerHTML = '<tr><td colspan="4" class="text-center dim">Nenhum projeto ativo na EJ Unicap.</td></tr>';
+            return;
+        }
+        
+        listBody.innerHTML = projetos.map(p => `
+            <tr>
+                <td><strong>${p.name || p.title || 'Projeto sem nome'}</strong></td>
+                <td class="dim">${(p.description || '').substring(0, 50)}...</td>
+                <td><span class="status-badge status-${(p.status||'planejamento').toLowerCase()}">${p.status || 'Planejamento'}</span></td>
+                <td>
+                    <button class="btn-outline-sm" title="Ir para Diagnóstico Matemático" onclick="abrirDiagnosticoDoProjeto(${p.id})" style="width: auto; font-size: 12px;">
+                        <i class="ph ph-math-operations"></i> Diagnóstico
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (err) {
+        listBody.innerHTML = `<tr><td colspan="4" class="text-center" style="color:var(--danger)">${err.message}</td></tr>`;
+    }
+}
+
+// A Ponte Inteligente entre Abas
+window.abrirDiagnosticoDoProjeto = function(id) {
+    // 1. Simula o clique na aba de Diagnóstico do menu lateral
+    document.querySelector('.nav-link[data-target="diagnostico"]')?.click();
+    
+    // 2. Trava o Select nativo na opção do projeto escolhido
+    const selector = document.getElementById('diag-project-selector');
+    if(selector) {
+        selector.value = id;
+    }
+};
+
 // ==========================================
 // 3. INICIALIZAÇÃO E EVENT LISTENERS DO DOM
 // ==========================================
@@ -260,6 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (targetId === 'reembolsos') carregarTabelaReembolsos();
             if (targetId === 'faltas') carregarTabelaFaltas();
             if (targetId === 'diagnostico') carregarProjetosParaDiagnostico(); 
+            if (targetId === 'acompanhamento') carregarProjetosAcompanhamento();
         });
     });
 
@@ -341,6 +386,36 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("Falta MOCK:", payload);
         alert("Falta enviada (Logika MOCK - Plugue a API).");
         closeModal('modal-falta');
+    });
+    
+    // Formulário de Criação de Projetos
+    document.getElementById('projeto-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btnSubmit = e.target.querySelector('button[type="submit"]');
+        btnSubmit.innerText = "Criando..."; btnSubmit.disabled = true;
+
+        const payload = {
+            name: document.getElementById('proj-name').value,
+            description: document.getElementById('proj-desc').value,
+            status: document.getElementById('proj-status').value
+        };
+
+        try {
+            // Assumindo que a sua rota de criação no backend seja POST /projects
+            const res = await fetchSeguro('/projects', { method: 'POST', body: JSON.stringify(payload) });
+            if (!res.ok) throw new Error((await res.json()).detail || "Erro ao criar projeto");
+            
+            alert("Projeto iniciado com sucesso!");
+            closeModal('modal-projeto');
+            e.target.reset();
+            carregarProjetosAcompanhamento(); // Recarrega a tabela imediatamente
+            carregarProjetosParaDiagnostico(); // Atualiza a lista do Select do Diagnóstico
+            
+        } catch (error) { 
+            alert("Falha na criação: " + error.message); 
+        } finally { 
+            btnSubmit.innerText = "Salvar Projeto"; btnSubmit.disabled = false; 
+        }
     });
 
     // Diagnóstico PERT/CCPM
