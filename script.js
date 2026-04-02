@@ -406,11 +406,13 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('falta-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const file = document.getElementById('file-abs').files[0];
+        // O CONTRATO DE DADOS EXATO QUE O BACKEND EXIGE
         const payload = {
-            name: document.getElementById('proj-name').value,
+            title: document.getElementById('proj-name').value, // Corrigido de 'name' para 'title'
             description: document.getElementById('proj-desc').value,
             status: document.getElementById('proj-status').value,
-            organization_id: parseInt(document.getElementById('proj-client').value)
+            organization_id: parseInt(document.getElementById('proj-client').value) || null,
+            member_ids: [] // Array vazio obrigatório exigido pelo backend
         };
         console.log("Falta MOCK:", payload);
         alert("Falta enviada (Logika MOCK - Plugue a API).");
