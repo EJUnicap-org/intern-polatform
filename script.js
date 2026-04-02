@@ -21,6 +21,11 @@ function closeModal(id) {
     if (modal) modal.style.display = 'none';
 }
 
+function openModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) modal.style.display = 'flex';
+}
+
 /**
  * Função Mestre para Requisições com Token JWT
  */
