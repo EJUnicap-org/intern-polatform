@@ -234,6 +234,32 @@ window.abrirDiagnosticoDoProjeto = function(id) {
     }
 };
 
+async function carregarLeadsParaProjetos() {
+    const selector = document.getElementById('proj-client');
+    if (!selector) return;
+    
+    selector.innerHTML = '<option value="">Buscando no banco de dados...</option>';
+    
+    try {
+        const res = await fetchSeguro('/organizations/leads');
+        if (!res.ok) throw new Error("Erro de comunicação");
+        const leads = await res.json();
+        
+        if (leads.length === 0) {
+            selector.innerHTML = '<option value="" disabled selected>Nenhum lead/cliente cadastrado. Crie um primeiro.</option>';
+            return;
+        }
+        
+        // Alimenta o Select com o ID real no banco de dados
+        selector.innerHTML = '<option value="" disabled selected>-- Selecione a Organização --</option>' + 
+            leads.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+            
+    } catch (err) {
+        selector.innerHTML = '<option value="" disabled>Erro ao carregar organizações</option>';
+        console.error(err);
+    }
+}
+
 // ==========================================
 // 3. INICIALIZAÇÃO E EVENT LISTENERS DO DOM
 // ==========================================
@@ -304,7 +330,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (targetId === 'reembolsos') carregarTabelaReembolsos();
             if (targetId === 'faltas') carregarTabelaFaltas();
             if (targetId === 'diagnostico') carregarProjetosParaDiagnostico(); 
-            if (targetId === 'acompanhamento') carregarProjetosAcompanhamento();
+            if (targetId === 'acompanhamento') {
+                carregarProjetosAcompanhamento();
+                carregarLeadsParaProjetos();
+            }
         });
     });
 
@@ -378,16 +407,16 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const file = document.getElementById('file-abs').files[0];
         const payload = {
-            date_absent: document.getElementById('abs-date').value,
-            reason: document.getElementById('abs-reason').value,
-            description: document.getElementById('abs-desc').value,
-            file_extension: file ? `.${file.name.split('.').pop()}` : null
+            name: document.getElementById('proj-name').value,
+            description: document.getElementById('proj-desc').value,
+            status: document.getElementById('proj-status').value,
+            organization_id: parseInt(document.getElementById('proj-client').value)
         };
         console.log("Falta MOCK:", payload);
         alert("Falta enviada (Logika MOCK - Plugue a API).");
         closeModal('modal-falta');
     });
-    
+
     // Formulário de Criação de Projetos
     document.getElementById('projeto-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
