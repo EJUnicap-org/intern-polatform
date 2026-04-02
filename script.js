@@ -259,6 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (targetId === 'time') carregarDadosTime();
             if (targetId === 'reembolsos') carregarTabelaReembolsos();
             if (targetId === 'faltas') carregarTabelaFaltas();
+            if (targetId === 'diagnostico') carregarProjetosParaDiagnostico(); 
         });
     });
 
@@ -361,9 +362,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('btn-calculate-diag')?.addEventListener('click', async (e) => {
         const btn = e.currentTarget;
-        const urlParams = new URLSearchParams(window.location.search);
-        const projectId = urlParams.get('project_id');
-        if (!projectId) return alert("ERRO DE ARQUITETURA: Nenhum projeto selecionado na URL (?project_id=1).");
+    });
+        document.getElementById('btn-calculate-diag')?.addEventListener('click', async (e) => {
+        const btn = e.currentTarget;
+        
+        // A NOVA TRAVA: Lê diretamente do <select> injetado no HTML
+        const projectId = document.getElementById('diag-project-selector').value;
+        
+        if (!projectId) {
+            return alert("ERRO DE OPERAÇÃO: Você precisa selecionar um projeto na lista acima antes de calcular a matriz.");
+        }
 
         const payload = { tasks: {} };
         document.querySelectorAll('#task-body tr').forEach(row => {
@@ -411,4 +419,5 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.appendChild(a); a.click(); a.remove();
         } catch (err) { alert("Erro ao baixar: " + err.message); }
     });
-});
+}
+);
