@@ -219,7 +219,98 @@
                     </div>
                 </section>
 
-                <section id="sec-individual" class="tab-content"><p class="dim">Em desenvolvimento...</p></section>
+                <section id="sec-individual" class="tab-content">
+                    <div class="header-main flex-between">
+                        <div>
+                            <h1>Visão Individual</h1>
+                            <p class="dim">Gestão das suas tarefas ativas e registro de ponto</p>
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-grid-1-6">
+                        <div class="card table-container" style="margin-top: 0;">
+                            <div class="card-header">
+                                <h3>Minhas Tarefas</h3>
+                                <span class="badge">Atribuídas a mim</span>
+                            </div>
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Tarefa</th>
+                                        <th>Projeto</th>
+                                        <th>Status</th>
+                                        <th>Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="minhas-tarefas-body">
+                                    <tr><td colspan="4" class="text-center dim">Consultando suas tarefas no banco de dados...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="card" style="text-align: center; border-top: 4px solid var(--primary);">
+                            <h3>Ponto Eletrônico</h3>
+                            <p class="dim small" style="margin-bottom: 20px;">Meta semanal da EJ: 20h</p>
+
+                            <div style="font-size: 42px; font-weight: bold; font-family: monospace; color: var(--text-main); margin: 20px 0;" id="relogio-local">
+                                00:00:00
+                            </div>
+
+                            <button class="btn-primary" id="btn-bater-ponto" style="margin-bottom: 20px; font-size: 16px;">
+                                <i class="ph ph-fingerprint"></i> Registrar Entrada / Saída
+                            </button>
+
+                            <div style="text-align: left; background: var(--input-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
+                                <div class="flex-between" style="margin-bottom: 8px;">
+                                    <span class="dim small">Progresso Semanal</span>
+                                    <strong id="horas-feitas-text" style="color: var(--success);">0h / 20h</strong>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="ponto-progress-bar" style="width: 0%; background: var(--success);"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="sec-ponto" class="tab-content">
+                    <div class="header-main flex-between">
+                        <div>
+                            <h1>Histórico de Ponto</h1>
+                            <p class="dim">Seus registros de horas trabalhadas</p>
+                        </div>
+                    </div>
+                    <div class="card table-container">
+                        <table class="table">
+                            <thead><tr><th>Data</th><th>Entrada</th><th>Saída</th><th>Total (h)</th></tr></thead>
+                            <tbody id="ponto-list-body">
+                                <tr><td colspan="4" class="text-center dim">Carregando espelho de ponto...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section id="sec-faltas" class="tab-content">
+                    <div class="header-main flex-between">
+                        <div>
+                            <h1>Gestão de Faltas</h1>
+                            <p class="dim">Controle de ausências e justificativas</p>
+                        </div>
+                        <button class="btn-primary" onclick="openModal('modal-falta')" style="width:auto;">
+                            <i class="ph ph-calendar-plus"></i> Justificar Falta
+                        </button>
+                    </div>
+                    <div class="card table-container">
+                        <table class="table">
+                            <thead><tr><th>Data da Ausência</th><th>Motivo</th><th>Status</th></tr></thead>
+                            <tbody id="tabela-faltas-body">
+                                <tr><td colspan="3" class="text-center dim">Carregando histórico...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+                
+                <section id="sec-psel" class="tab-content"><p class="dim text-center">Módulo de PSEL bloqueado para a próxima release.</p></section>
                 <section id="sec-ponto" class="tab-content"><p class="dim">Em desenvolvimento...</p></section>
                 <section id="sec-psel" class="tab-content"><p class="dim">Em desenvolvimento...</p></section>
                 <section id="sec-faltas" class="tab-content"><p class="dim">Em desenvolvimento...</p></section>

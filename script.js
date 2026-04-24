@@ -260,6 +260,46 @@ async function carregarLeadsParaProjetos() {
     }
 }
 
+async function carregarVisaoIndividual() {
+    const tbody = document.getElementById('minhas-tarefas-body');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center dim">Sincronizando seus dados...</td></tr>';
+
+    try {
+        // A API DEVE extrair a identidade do usuário a partir do Token JWT no Header
+        const res = await fetchSeguro('/users/me/dashboard'); 
+        if (!res.ok) throw new Error("Sua sessão é inválida ou a rota /users/me/dashboard não existe no backend.");
+        
+        const dados = await res.json();
+
+        // 1. Renderiza as Tarefas
+        if (!dados.tarefas || dados.tarefas.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center dim">Você não tem tarefas atribuídas.</td></tr>';
+        } else {
+            tbody.innerHTML = dados.tarefas.map(t => `
+                <tr>
+                    <td><strong>${t.nome}</strong></td>
+                    <td class="dim">${t.projeto_nome}</td>
+                    <td><span class="status-badge status-${(t.status || 'pendente').toLowerCase()}">${t.status || 'Pendente'}</span></td>
+                    <td><button class="btn-outline-sm" style="width: auto;" title="Marcar como Concluída"><i class="ph ph-check"></i></button></td>
+                </tr>
+            `).join('');
+        }
+
+        // 2. Atualiza as Barras do Ponto Eletrônico
+        const horasFeitas = parseFloat(dados.horas_semanais) || 0;
+        const meta = 20; // Meta fixa estipulada pela EJ Unicap
+        const porcentagem = Math.min((horasFeitas / meta) * 100, 100);
+
+        document.getElementById('horas-feitas-text').innerText = `${horasFeitas}h / ${meta}h`;
+        document.getElementById('ponto-progress-bar').style.width = `${porcentagem}%`;
+
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center" style="color:var(--danger)">${err.message}</td></tr>`;
+    }
+}
+
 // ==========================================
 // 3. INICIALIZAÇÃO E EVENT LISTENERS DO DOM
 // ==========================================
@@ -330,6 +370,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (targetId === 'reembolsos') carregarTabelaReembolsos();
             if (targetId === 'faltas') carregarTabelaFaltas();
             if (targetId === 'diagnostico') carregarProjetosParaDiagnostico(); 
+            if (targetId === 'individual') carregarVisaoIndividual();
             if (targetId === 'acompanhamento') {
                 carregarProjetosAcompanhamento();
                 carregarLeadsParaProjetos();
@@ -464,6 +505,36 @@ document.addEventListener('DOMContentLoaded', () => {
             <td><button type="button" class="btn-icon-danger" onclick="this.parentElement.parentElement.remove()"><i class="ph ph-trash"></i></button></td>
         `;
         tbody.appendChild(tr);
+    });
+
+    // === MOTOR DO PONTO ELETRÔNICO E RELÓGIO ===
+    const relogio = document.getElementById('relogio-local');
+    if (relogio) {
+        setInterval(() => {
+            const agora = new Date();
+            relogio.innerText = agora.toLocaleTimeString('pt-BR');
+        }, 1000);
+    }
+
+    // Botão de Bater Ponto (Requer rota POST /time-records no backend)
+    document.getElementById('btn-bater-ponto')?.addEventListener('click', async (e) => {
+        const btn = e.currentTarget;
+        btn.innerHTML = '<i class="ph ph-spinner-gap"></i> Registrando...';
+        btn.disabled = true;
+
+        try {
+            // O Backend registra a hora exata do servidor, NUNCA confie na hora do navegador do usuário
+            const res = await fetchSeguro('/time-records/punch', { method: 'POST', body: JSON.stringify({}) });
+            if (!res.ok) throw new Error("Erro ao registrar ponto.");
+            
+            alert("Ponto registrado com sucesso no banco de dados!");
+            carregarVisaoIndividual(); // Atualiza a barra de progresso
+        } catch (err) {
+            alert("Falha na comunicação com a API de Ponto: " + err.message);
+        } finally {
+            btn.innerHTML = '<i class="ph ph-fingerprint"></i> Alternar Ponto';
+            btn.disabled = false;
+        }
     });
 
     document.getElementById('btn-calculate-diag')?.addEventListener('click', async (e) => {
