@@ -276,17 +276,25 @@
                 <section id="sec-ponto" class="tab-content">
                     <div class="header-main flex-between">
                         <div>
-                            <h1>Histórico de Ponto</h1>
-                            <p class="dim">Seus registros de horas trabalhadas</p>
+                            <h1>Resumo de Ponto</h1>
+                            <p class="dim">Seus dados consolidados da semana atual</p>
                         </div>
                     </div>
-                    <div class="card table-container">
-                        <table class="table">
-                            <thead><tr><th>Data</th><th>Entrada</th><th>Saída</th><th>Total (h)</th></tr></thead>
-                            <tbody id="ponto-list-body">
-                                <tr><td colspan="4" class="text-center dim">Carregando espelho de ponto...</td></tr>
-                            </tbody>
-                        </table>
+                    
+                    <div class="dashboard-grid-1-6">
+                        <div class="card" style="display: flex; flex-direction: column; justify-content: center; align-items: center; border-top: 4px solid var(--primary);">
+                            <h3 style="margin-bottom: 10px;">Tempo Trabalhado na Semana</h3>
+                            <strong id="ponto-total-horas" style="font-size: 56px; color: var(--success); font-family: monospace;">0h 0m</strong>
+                            <p class="dim" style="margin-top: 10px;">Baseado em <span id="ponto-total-minutos">0</span> minutos contabilizados no servidor.</p>
+                        </div>
+
+                        <div class="card" style="text-align: center;">
+                            <h3 style="margin-bottom: 20px;">Status Atual do Turno</h3>
+                            <div id="ponto-status-badge" style="font-size: 20px; font-weight: bold; padding: 20px; border-radius: 8px; background: var(--input-bg); border: 1px solid var(--border); margin-bottom: 20px;">
+                                Sincronizando...
+                            </div>
+                            <p class="dim small" id="ponto-start-text">Aguardando dados...</p>
+                        </div>
                     </div>
                 </section>
 

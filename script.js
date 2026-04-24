@@ -186,46 +186,51 @@ async function carregarProjetosParaDiagnostico() {
 }
 
 async function carregarTabelaPonto() {
-    const tbody = document.getElementById('ponto-list-body');
-    if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="4" class="text-center dim">Carregando histórico...</td></tr>';
-    
+    // Mantivemos o nome da função para não precisar alterar os gatilhos das abas na linha 281
     try {
         const res = await fetchSeguro('/clockins/summary'); 
-        if(!res.ok) throw new Error("Erro ao buscar ponto no servidor.");
+        if(!res.ok) throw new Error("Erro ao buscar resumo do ponto no servidor.");
         
-        let resposta_bruta = await res.json();
-        let registros_array = [];
+        const dados = await res.json(); // { worked_minutes_this_week: X, is_working: bool, current_start_time: str }
 
-        // 1. A BLINDAGEM DE TIPOS (Procura o Array dentro do Objeto)
-        if (Array.isArray(resposta_bruta)) {
-            registros_array = resposta_bruta; // Se vier um array limpo, ótimo.
-        } else if (typeof resposta_bruta === 'object' && resposta_bruta !== null) {
-            // Se vier um Objeto, tentamos caçar a chave que guarda a lista (chutes arquiteturais comuns)
-            if (Array.isArray(resposta_bruta.data)) registros_array = resposta_bruta.data;
-            else if (Array.isArray(resposta_bruta.records)) registros_array = resposta_bruta.records;
-            else if (Array.isArray(resposta_bruta.registros)) registros_array = resposta_bruta.registros;
-            else if (Array.isArray(resposta_bruta.historico)) registros_array = resposta_bruta.historico;
-            else throw new Error("A API devolveu um Objeto, mas o Front-end não achou a chave do Array. Abra o F12 (Network).");
+        // 1. Conversão Matemática Rigorosa (Minutos -> Horas e Minutos)
+        const totalMinutos = dados.worked_minutes_this_week || 0;
+        const horas = Math.floor(totalMinutos / 60);
+        const minutosRestantes = totalMinutos % 60;
+
+        const painelHoras = document.getElementById('ponto-total-horas');
+        const painelMinutos = document.getElementById('ponto-total-minutos');
+        
+        if (painelHoras) painelHoras.innerText = `${horas}h ${minutosRestantes}m`;
+        if (painelMinutos) painelMinutos.innerText = totalMinutos;
+
+        // 2. Tradução do Status
+        const badgeStatus = document.getElementById('ponto-status-badge');
+        const textStart = document.getElementById('ponto-start-text');
+
+        if (badgeStatus) {
+            if (dados.is_working) {
+                badgeStatus.innerHTML = '<span style="color: var(--warning);"><i class="ph ph-clock"></i> TRABALHANDO AGORA</span>';
+                badgeStatus.style.borderColor = 'var(--warning)';
+            } else {
+                badgeStatus.innerHTML = '<span class="dim"><i class="ph ph-coffee"></i> FORA DO EXPEDIENTE</span>';
+                badgeStatus.style.borderColor = 'var(--border)';
+            }
         }
 
-        // 2. Renderização Segura
-        if (registros_array.length === 0) {
-            return tbody.innerHTML = '<tr><td colspan="4" class="text-center dim">Nenhum registro encontrado.</td></tr>';
+        if (textStart) {
+            if (dados.current_start_time) {
+                const dataInicio = new Date(dados.current_start_time);
+                textStart.innerText = `Turno iniciado às: ${dataInicio.toLocaleTimeString('pt-BR')}`;
+            } else {
+                textStart.innerText = "Nenhum turno em andamento.";
+            }
         }
-        
-        tbody.innerHTML = registros_array.map(r => `
-            <tr>
-                <td><strong>${new Date(r.date || r.created_at || r.data || new Date()).toLocaleDateString('pt-BR')}</strong></td>
-                <td><span class="text-green">${r.entry_time || r.entrada || '--:--'}</span></td>
-                <td><span class="text-yellow">${r.exit_time || r.saida || '--:--'}</span></td>
-                <td>${r.total_hours || r.total || '0'}h</td>
-            </tr>
-        `).join('');
-        
+
     } catch (e) { 
-        tbody.innerHTML = `<tr><td colspan="4" class="text-center dim" style="color:var(--danger)">${e.message}</td></tr>`; 
-        console.error("Erro na Tabela de Ponto:", e);
+        console.error("Erro no Resumo de Ponto:", e);
+        const painelHoras = document.getElementById('ponto-total-horas');
+        if (painelHoras) painelHoras.innerHTML = `<span style="font-size: 20px; color: var(--danger);">${e.message}</span>`;
     }
 }
 
