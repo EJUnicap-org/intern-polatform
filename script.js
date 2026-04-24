@@ -54,35 +54,67 @@ function addContactField() {
     container.appendChild(div);
 }
 
-function addQuestionField() {
-    const container = document.getElementById('questions-container');
-    if (!container) return;
-    const div = document.createElement('div');
-    div.className = 'contact-row'; // Reaproveitando grid
-    div.innerHTML = `
-        <input type="text" placeholder="Pergunta" class="dark-input" style="grid-column: span 2;" required>
-        <select class="dark-input"><option value="text">Curta</option><option value="textarea">Longa</option></select>
-        <button type="button" class="btn-icon-danger" onclick="this.parentElement.remove()">&times;</button>
-    `;
-    container.appendChild(div);
-}
-
 // ==========================================
 // 2. FUNÇÕES DE BUSCA DE DADOS (GET)
 // ==========================================
 
+async function carregarVisaoIndividual() {
+    const tbody = document.getElementById('minhas-tarefas-body');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center dim">Sincronizando seus dados...</td></tr>';
+
+    try {
+        const res = await fetchSeguro('/auth/me'); 
+        if (!res.ok) throw new Error("Sessão inválida ou acesso negado.");
+        const usuario = await res.json();
+
+        // UI: Atualiza a Identidade do Usuário no Topo
+        const avatarBox = document.querySelector('.avatar-mini');
+        if (avatarBox && usuario.nome) {
+            avatarBox.innerText = usuario.nome.substring(0, 2).toUpperCase();
+            avatarBox.title = usuario.email;
+        }
+        const tituloH1 = document.querySelector('#sec-individual h1');
+        if (tituloH1 && usuario.nome) tituloH1.innerText = `Olá, ${usuario.nome.split(' ')[0]}`;
+
+        // 1. Tarefas
+        if (!usuario.tarefas || usuario.tarefas.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center dim">Nenhuma tarefa atribuída a você no momento.</td></tr>';
+        } else {
+            tbody.innerHTML = usuario.tarefas.map(t => `
+                <tr>
+                    <td><strong>${t.nome}</strong></td>
+                    <td class="dim">${t.projeto_nome || 'Interno'}</td>
+                    <td><span class="status-badge status-${(t.status || 'pendente').toLowerCase()}">${t.status || 'Pendente'}</span></td>
+                    <td><button class="btn-outline-sm" style="width: auto;" title="Concluir"><i class="ph ph-check"></i></button></td>
+                </tr>
+            `).join('');
+        }
+
+        // 2. Progresso do Ponto
+        const horasFeitas = parseFloat(usuario.horas_semanais) || 0;
+        const meta = 20; 
+        const porcentagem = Math.min((horasFeitas / meta) * 100, 100);
+        
+        const textoHoras = document.getElementById('horas-feitas-text');
+        const barraPonto = document.getElementById('ponto-progress-bar');
+        
+        if (textoHoras) textoHoras.innerText = `${horasFeitas}h / ${meta}h`;
+        if (barraPonto) barraPonto.style.width = `${porcentagem}%`;
+
+    } catch (err) { tbody.innerHTML = `<tr><td colspan="4" class="text-center" style="color:var(--danger)">${err.message}</td></tr>`; }
+}
+
 async function carregarLeads() {
     const listBody = document.getElementById('leads-list-body');
     if (!listBody) return;
-    listBody.innerHTML = '<tr><td colspan="5" class="text-center dim">Buscando leads...</td></tr>';
+    listBody.innerHTML = '<tr><td colspan="5" class="text-center dim">Buscando organizações...</td></tr>';
     try {
         const response = await fetchSeguro('/organizations/leads');
         if (!response.ok) throw new Error("Acesso negado (401/403)");
         const leads = await response.json();
-        if (leads.length === 0) {
-            listBody.innerHTML = '<tr><td colspan="5" class="text-center dim">Nenhum lead encontrado.</td></tr>';
-            return;
-        }
+        if (leads.length === 0) return listBody.innerHTML = '<tr><td colspan="5" class="text-center dim">Nenhum lead encontrado.</td></tr>';
+        
         listBody.innerHTML = leads.map(lead => `
             <tr>
                 <td><strong>${lead.name}</strong></td>
@@ -95,39 +127,112 @@ async function carregarLeads() {
     } catch (error) { listBody.innerHTML = `<tr><td colspan="5" class="text-center" style="color:var(--danger)">${error.message}</td></tr>`; }
 }
 
+async function carregarProjetosAcompanhamento() {
+    const listBody = document.getElementById('projetos-list-body');
+    if (!listBody) return;
+    listBody.innerHTML = '<tr><td colspan="4" class="text-center dim">Buscando projetos...</td></tr>';
+    try {
+        const res = await fetchSeguro('/projects/');
+        if (!res.ok) throw new Error("Erro ao buscar projetos");
+        const projetos = await res.json();
+        
+        if (projetos.length === 0) return listBody.innerHTML = '<tr><td colspan="4" class="text-center dim">Nenhum projeto ativo.</td></tr>';
+        
+        listBody.innerHTML = projetos.map(p => `
+            <tr>
+                <td><strong>${p.title || p.name || 'Projeto sem nome'}</strong></td>
+                <td class="dim">${(p.description || '').substring(0, 50)}...</td>
+                <td><span class="status-badge status-${(p.status||'planejamento').toLowerCase()}">${p.status || 'Planejamento'}</span></td>
+                <td>
+                    <button class="btn-outline-sm" title="Ir para Diagnóstico Matemático" onclick="abrirDiagnosticoDoProjeto(${p.id})" style="width: auto; font-size: 12px;">
+                        <i class="ph ph-math-operations"></i> Diagnóstico
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (err) { listBody.innerHTML = `<tr><td colspan="4" class="text-center" style="color:var(--danger)">${err.message}</td></tr>`; }
+}
+
+async function carregarLeadsParaProjetos() {
+    const selector = document.getElementById('proj-client');
+    if (!selector) return;
+    selector.innerHTML = '<option value="">Buscando clientes...</option>';
+    try {
+        const res = await fetchSeguro('/organizations/leads');
+        if (!res.ok) throw new Error("Erro na comunicação");
+        const leads = await res.json();
+        if (leads.length === 0) return selector.innerHTML = '<option value=\"\" disabled selected>Nenhum cliente cadastrado.</option>';
+        selector.innerHTML = '<option value=\"\" disabled selected>-- Selecione a Organização --</option>' + leads.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+    } catch (err) { selector.innerHTML = '<option value=\"\" disabled>Erro ao carregar</option>'; }
+}
+
+window.abrirDiagnosticoDoProjeto = function(id) {
+    document.querySelector('.nav-link[data-target="diagnostico"]')?.click();
+    const selector = document.getElementById('diag-project-selector');
+    if(selector) selector.value = id;
+};
+
 async function carregarProjetosParaDiagnostico() {
     const selector = document.getElementById('diag-project-selector');
     if (!selector) return;
-
-    selector.innerHTML = '<option value="">Buscando projetos no banco...</option>';
-
+    selector.innerHTML = '<option value="">Buscando projetos...</option>';
     try {
-        const res = await fetchSeguro('/projects'); 
-        if (!res.ok) throw new Error("Erro na rota GET /projects");
-        
+        const res = await fetchSeguro('/projects/'); 
+        if (!res.ok) throw new Error("Erro ao buscar projetos");
         const projetos = await res.json();
-        
-        if (projetos.length === 0) {
-            selector.innerHTML = '<option value="">Nenhum projeto cadastrado</option>';
-            return;
-        }
+        if (projetos.length === 0) return selector.innerHTML = '<option value="">Nenhum projeto cadastrado</option>';
+        selector.innerHTML = '<option value="" disabled selected>-- Selecione um Projeto --</option>' + projetos.map(p => `<option value="${p.id}">${p.title || p.name || 'Projeto ID: ' + p.id}</option>`).join('');
+    } catch (err) { selector.innerHTML = '<option value="">Falha de comunicação</option>'; }
+}
 
-        // Constrói as opções vinculando o ID real no atributo 'value' e mostrando o Nome
-        selector.innerHTML = '<option value="" disabled selected>-- Selecione um Projeto --</option>' + 
-            projetos.map(p => `<option value="${p.id}">${p.title || 'Projeto ID: ' + p.id}</option>`).join('');
+async function carregarTabelaPonto() {
+    const tbody = document.getElementById('ponto-list-body');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center dim">Carregando histórico...</td></tr>';
+    try {
+        const res = await fetchSeguro('/clockins/summary'); 
+        if(!res.ok) throw new Error("Erro ao buscar ponto.");
+        const registros = await res.json();
+        if (registros.length === 0) return tbody.innerHTML = '<tr><td colspan="4" class="text-center dim">Nenhum registro encontrado.</td></tr>';
         
-    } catch (err) {
-        selector.innerHTML = '<option value="">Falha de comunicação</option>';
-        console.error(err);
-    }
+        tbody.innerHTML = registros.map(r => `
+            <tr>
+                <td><strong>${new Date(r.date || r.created_at).toLocaleDateString('pt-BR')}</strong></td>
+                <td><span class="text-green">${r.entry_time || '--:--'}</span></td>
+                <td><span class="text-yellow">${r.exit_time || '--:--'}</span></td>
+                <td>${r.total_hours || '0'}h</td>
+            </tr>
+        `).join('');
+    } catch (e) { tbody.innerHTML = `<tr><td colspan="4" class="text-center dim" style="color:var(--danger)">${e.message}</td></tr>`; }
+}
+
+async function carregarTabelaReembolsos() {
+    const tbody = document.getElementById('reembolso-list-body');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center dim">Carregando reembolsos...</td></tr>';
+    try {
+        const res = await fetchSeguro('/reimbursements/');
+        if(!res.ok) throw new Error("Erro");
+        const dados = await res.json();
+        if (dados.length === 0) return tbody.innerHTML = '<tr><td colspan="4" class="text-center dim">Nenhum reembolso registrado.</td></tr>';
+        
+        tbody.innerHTML = dados.map(item => `
+            <tr>
+                <td><div style="display: flex; flex-direction: column;"><strong>${item.title}</strong><span class="dim" style="font-size: 12px;">${new Date(item.date_time || item.created_at).toLocaleDateString('pt-BR')}</span></div></td>
+                <td class="dim">${item.category || '-'}</td>
+                <td>${parseFloat(item.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                <td><span class="status-badge status-${(item.status || 'pending').toLowerCase()}">${item.status || 'Pendente'}</span></td>
+            </tr>
+        `).join('');
+    } catch (e) { tbody.innerHTML = `<tr><td colspan="4" class="text-center dim">Erro ao buscar dados.</td></tr>`; }
 }
 
 async function carregarDadosTime() {
     const listBody = document.getElementById('team-status-list');
     if (!listBody) return;
-    listBody.innerHTML = '<tr><td colspan="3" class="text-center dim">Buscando equipe...</td></tr>';
+    listBody.innerHTML = '<tr><td colspan="3" class="text-center dim">Sincronizando time...</td></tr>';
     try {
-        const res = await fetchSeguro('/team/status');
+        const res = await fetchSeguro('/users/workload');
         if (!res.ok) throw new Error("Falha na busca");
         const data = await res.json();
         if (data.membros) {
@@ -144,160 +249,7 @@ async function carregarDadosTime() {
             chart.style.background = `conic-gradient(var(--primary) ${data.porcentagem_geral}%, var(--bg-card) 0deg)`;
             document.getElementById('occupancy-percent').innerText = `${data.porcentagem_geral}%`;
         }
-    } catch (e) { listBody.innerHTML = `<tr><td colspan="3" class="text-center" style="color:var(--danger)">Erro ao carregar time.</td></tr>`; }
-}
-
-async function carregarTabelaReembolsos() {
-    const tbody = document.getElementById('reembolso-list-body');
-    if (!tbody) return;
-    try {
-        const res = await fetchSeguro('/financeiro/reembolsos');
-        if(!res.ok) throw new Error("Erro");
-        const dados = await res.json();
-        if (dados.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center dim">Nenhum reembolso registrado.</td></tr>';
-            return;
-        }
-        tbody.innerHTML = dados.map(item => `
-            <tr>
-                <td><div style="display: flex; flex-direction: column;"><strong>${item.title}</strong><span class="dim" style="font-size: 12px;">${new Date(item.date_time || item.created_at).toLocaleDateString('pt-BR')}</span></div></td>
-                <td class="dim">${item.category || '-'}</td>
-                <td>${parseFloat(item.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                <td><span class="status-badge status-${(item.status || 'pending').toLowerCase()}">${item.status || 'Pendente'}</span></td>
-            </tr>
-        `).join('');
-    } catch (e) { tbody.innerHTML = `<tr><td colspan="5" class="text-center dim">Erro ao buscar dados.</td></tr>`; }
-}
-
-async function carregarTabelaFaltas() {
-    const tbody = document.getElementById('tabela-faltas-body');
-    if (!tbody) return;
-    try {
-        const res = await fetchSeguro('/absences'); // Ajuste a rota correta do back
-        if(!res.ok) throw new Error("Erro");
-        const faltas = await res.json();
-        if (faltas.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" class="text-center dim">Nenhuma falta registrada.</td></tr>';
-            return;
-        }
-        tbody.innerHTML = faltas.map(f => `
-            <tr>
-                <td>${new Date(f.date_absent).toLocaleDateString('pt-BR')}</td>
-                <td><strong>${f.reason}</strong></td>
-                <td><span class="status-badge status-${(f.status||'pendente').toLowerCase()}">${f.status||'Pendente'}</span></td>
-            </tr>
-        `).join('');
-    } catch (e) { tbody.innerHTML = `<tr><td colspan="3" class="text-center dim">Modo Offline / Sem API configurada.</td></tr>`; }
-}
-
-async function carregarProjetosAcompanhamento() {
-    const listBody = document.getElementById('projetos-list-body');
-    if (!listBody) return;
-    listBody.innerHTML = '<tr><td colspan="4" class="text-center dim">Buscando projetos...</td></tr>';
-    
-    try {
-        const res = await fetchSeguro('/projects');
-        if (!res.ok) throw new Error("Erro ao buscar projetos");
-        const projetos = await res.json();
-        
-        if (projetos.length === 0) {
-            listBody.innerHTML = '<tr><td colspan="4" class="text-center dim">Nenhum projeto ativo na EJ Unicap.</td></tr>';
-            return;
-        }
-        
-        listBody.innerHTML = projetos.map(p => `
-            <tr>
-                <td><strong>${p.name || p.title || 'Projeto sem nome'}</strong></td>
-                <td class="dim">${(p.description || '').substring(0, 50)}...</td>
-                <td><span class="status-badge status-${(p.status||'planejamento').toLowerCase()}">${p.status || 'Planejamento'}</span></td>
-                <td>
-                    <button class="btn-outline-sm" title="Ir para Diagnóstico Matemático" onclick="abrirDiagnosticoDoProjeto(${p.id})" style="width: auto; font-size: 12px;">
-                        <i class="ph ph-math-operations"></i> Diagnóstico
-                    </button>
-                </td>
-            </tr>
-        `).join('');
-    } catch (err) {
-        listBody.innerHTML = `<tr><td colspan="4" class="text-center" style="color:var(--danger)">${err.message}</td></tr>`;
-    }
-}
-
-// A Ponte Inteligente entre Abas
-window.abrirDiagnosticoDoProjeto = function(id) {
-    // 1. Simula o clique na aba de Diagnóstico do menu lateral
-    document.querySelector('.nav-link[data-target="diagnostico"]')?.click();
-    
-    // 2. Trava o Select nativo na opção do projeto escolhido
-    const selector = document.getElementById('diag-project-selector');
-    if(selector) {
-        selector.value = id;
-    }
-};
-
-async function carregarLeadsParaProjetos() {
-    const selector = document.getElementById('proj-client');
-    if (!selector) return;
-    
-    selector.innerHTML = '<option value="">Buscando no banco de dados...</option>';
-    
-    try {
-        const res = await fetchSeguro('/organizations/leads');
-        if (!res.ok) throw new Error("Erro de comunicação");
-        const leads = await res.json();
-        
-        if (leads.length === 0) {
-            selector.innerHTML = '<option value="" disabled selected>Nenhum lead/cliente cadastrado. Crie um primeiro.</option>';
-            return;
-        }
-        
-        // Alimenta o Select com o ID real no banco de dados
-        selector.innerHTML = '<option value="" disabled selected>-- Selecione a Organização --</option>' + 
-            leads.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
-            
-    } catch (err) {
-        selector.innerHTML = '<option value="" disabled>Erro ao carregar organizações</option>';
-        console.error(err);
-    }
-}
-
-async function carregarVisaoIndividual() {
-    const tbody = document.getElementById('minhas-tarefas-body');
-    if (!tbody) return;
-    
-    tbody.innerHTML = '<tr><td colspan="4" class="text-center dim">Sincronizando seus dados...</td></tr>';
-
-    try {
-        // A API DEVE extrair a identidade do usuário a partir do Token JWT no Header
-        const res = await fetchSeguro('/users/me/dashboard'); 
-        if (!res.ok) throw new Error("Sua sessão é inválida ou a rota /users/me/dashboard não existe no backend.");
-        
-        const dados = await res.json();
-
-        // 1. Renderiza as Tarefas
-        if (!dados.tarefas || dados.tarefas.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center dim">Você não tem tarefas atribuídas.</td></tr>';
-        } else {
-            tbody.innerHTML = dados.tarefas.map(t => `
-                <tr>
-                    <td><strong>${t.nome}</strong></td>
-                    <td class="dim">${t.projeto_nome}</td>
-                    <td><span class="status-badge status-${(t.status || 'pendente').toLowerCase()}">${t.status || 'Pendente'}</span></td>
-                    <td><button class="btn-outline-sm" style="width: auto;" title="Marcar como Concluída"><i class="ph ph-check"></i></button></td>
-                </tr>
-            `).join('');
-        }
-
-        // 2. Atualiza as Barras do Ponto Eletrônico
-        const horasFeitas = parseFloat(dados.horas_semanais) || 0;
-        const meta = 20; // Meta fixa estipulada pela EJ Unicap
-        const porcentagem = Math.min((horasFeitas / meta) * 100, 100);
-
-        document.getElementById('horas-feitas-text').innerText = `${horasFeitas}h / ${meta}h`;
-        document.getElementById('ponto-progress-bar').style.width = `${porcentagem}%`;
-
-    } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="4" class="text-center" style="color:var(--danger)">${err.message}</td></tr>`;
-    }
+    } catch (e) { listBody.innerHTML = `<tr><td colspan="3" class="text-center" style="color:var(--danger)">API não conectada.</td></tr>`; }
 }
 
 // ==========================================
@@ -335,17 +287,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     if(errorMsg) errorMsg.style.display = 'block';
                 }
             } catch (err) {
-                alert("Erro ao conectar com a API (Render Inativa ou CORS).");
+                alert("Erro ao conectar com a API.");
             } finally { btn.innerText = "Acessar Sistema"; btn.disabled = false; }
         });
     }
 
-    // Logout
     document.getElementById('btn-logout')?.addEventListener('click', (e) => {
         e.preventDefault(); localStorage.removeItem('token_ej'); window.location.reload(); 
     });
 
-    // Navegação (Tabs)
+    // Relógio do Ponto Eletrônico
+    const relogio = document.getElementById('relogio-local');
+    if (relogio) setInterval(() => { relogio.innerText = new Date().toLocaleTimeString('pt-BR'); }, 1000);
+
+    // Navegação (Tabs) e Gatilhos de API
     const links = document.querySelectorAll('.nav-link[data-target]');
     const sections = document.querySelectorAll('.tab-content');
     links.forEach(link => {
@@ -364,13 +319,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const titleDisplay = document.getElementById('page-title');
             if (titleDisplay) titleDisplay.innerText = this.innerText.trim();
 
-            // Gatilhos de Carregamento
+            // Dispara as consultas ao banco dependendo da aba
+            if (targetId === 'individual') carregarVisaoIndividual();
+            if (targetId === 'ponto') carregarTabelaPonto();
             if (targetId === 'leads') carregarLeads();
             if (targetId === 'time') carregarDadosTime();
             if (targetId === 'reembolsos') carregarTabelaReembolsos();
-            if (targetId === 'faltas') carregarTabelaFaltas();
             if (targetId === 'diagnostico') carregarProjetosParaDiagnostico(); 
-            if (targetId === 'individual') carregarVisaoIndividual();
             if (targetId === 'acompanhamento') {
                 carregarProjetosAcompanhamento();
                 carregarLeadsParaProjetos();
@@ -378,17 +333,52 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Inputs de Arquivo UI feedback
+    // Feedback visual dos Inputs de Arquivo
     document.getElementById('file-reembolso')?.addEventListener('change', e => {
         document.getElementById('file-name-display').innerText = e.target.files[0]?.name || "Arraste ou clique";
     });
-    document.getElementById('file-abs')?.addEventListener('change', e => {
-        document.getElementById('abs-file-display').innerText = e.target.files[0]?.name || "Clique para subir";
+
+    // --- FORMULÁRIOS DE INTEGRAÇÃO COM BACKEND ---
+
+    // 1. Registro de Ponto
+    document.getElementById('btn-bater-ponto')?.addEventListener('click', async (e) => {
+        const btn = e.currentTarget;
+        btn.innerHTML = '<i class="ph ph-spinner-gap"></i> Registrando...'; btn.disabled = true;
+        try {
+            const res = await fetchSeguro('/clockins/register', { method: 'POST', body: JSON.stringify({}) });
+            if (!res.ok) throw new Error("Erro ao registrar ponto.");
+            alert("Ponto registrado com sucesso!");
+            carregarVisaoIndividual(); 
+        } catch (err) { alert("Falha na API de Ponto: " + err.message); } 
+        finally { btn.innerHTML = '<i class="ph ph-fingerprint"></i> Registrar Entrada / Saída'; btn.disabled = false; }
     });
 
-    // --- FORMULÁRIOS COMPLEXOS ---
+    // 2. Projetos Form (O Contrato que quebrou antes)
+    document.getElementById('projeto-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btnSubmit = e.target.querySelector('button[type="submit"]');
+        btnSubmit.innerText = "Criando..."; btnSubmit.disabled = true;
 
-    // Leads Form
+        const payload = {
+            title: document.getElementById('proj-name').value, 
+            description: document.getElementById('proj-desc').value,
+            status: document.getElementById('proj-status').value,
+            organization_id: parseInt(document.getElementById('proj-client').value) || null,
+            member_ids: [] // Obrigatório pelo schema
+        };
+
+        try {
+            const res = await fetchSeguro('/projects/', { method: 'POST', body: JSON.stringify(payload) });
+            if (!res.ok) throw new Error((await res.json()).detail || "Erro de Validação Pydantic");
+            alert("Projeto iniciado com sucesso!");
+            closeModal('modal-projeto'); e.target.reset();
+            carregarProjetosAcompanhamento(); 
+            carregarProjetosParaDiagnostico(); 
+        } catch (error) { alert("Falha na criação: " + error.message); } 
+        finally { btnSubmit.innerText = "Salvar Projeto"; btnSubmit.disabled = false; }
+    });
+
+    // 3. Leads Form
     document.getElementById('lead-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const btnSubmit = e.target.querySelector('button[type="submit"]');
@@ -407,90 +397,54 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const res = await fetchSeguro('/organizations/leads', { method: 'POST', body: JSON.stringify(leadData) });
             if (!res.ok) throw new Error((await res.json()).detail || "Erro");
-            alert("Lead criado com sucesso!");
-            closeModal('modal-lead');
-            e.target.reset();
+            alert("Organização salva!");
+            closeModal('modal-lead'); e.target.reset();
             document.getElementById('contacts-container').innerHTML = ''; 
             carregarLeads(); 
         } catch (error) { alert("Falha: " + error.message); } 
         finally { btnSubmit.innerText = "Salvar Organização"; btnSubmit.disabled = false; }
     });
 
-    // Reembolso Form (Upload S3/Cloudflare 2 Passos)
+    // 4. Reembolso Form (O Fluxo de 3 Passos: R2 + Banco)
     document.getElementById('reembolso-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const file = document.getElementById('file-reembolso').files[0];
         if (!file) return alert("Selecione um comprovante.");
-
-        const dadosReembolso = {
-            title: document.getElementById('ref-title').value,
-            description: document.getElementById('ref-description').value,
-            category: document.getElementById('ref-category').value,
-            value: parseFloat(document.getElementById('ref-value').value),
-            pix_key: document.getElementById('ref-pix').value,
-            file_extension: `.${file.name.split('.').pop()}`
-        };
-
-        try {
-            const res = await fetchSeguro('/reimbursements', { method: 'POST', body: JSON.stringify(dadosReembolso) });
-            if (!res.ok) throw new Error('Erro ao criar solicitação');
-            const { presigned_url } = await res.json();
-            
-            // PUT direto pro R2
-            await fetch(presigned_url.upload_url, { method: presigned_url.method, body: file, headers: { 'Content-Type': file.type } });
-            alert("Reembolso e comprovante enviados com sucesso!");
-            closeModal('modal-reembolso'); e.target.reset(); carregarTabelaReembolsos();
-        } catch (error) { alert("Falha ao processar reembolso."); }
-    });
-
-    // Faltas Form
-    document.getElementById('falta-form')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const file = document.getElementById('file-abs').files[0];
-        // O CONTRATO DE DADOS EXATO QUE O BACKEND EXIGE
-        const payload = {
-            title: document.getElementById('proj-name').value, // Corrigido de 'name' para 'title'
-            description: document.getElementById('proj-desc').value,
-            status: document.getElementById('proj-status').value,
-            organization_id: parseInt(document.getElementById('proj-client').value) || null,
-            member_ids: [] // Array vazio obrigatório exigido pelo backend
-        };
-        console.log("Falta MOCK:", payload);
-        alert("Falta enviada (Logika MOCK - Plugue a API).");
-        closeModal('modal-falta');
-    });
-
-    // Formulário de Criação de Projetos
-    document.getElementById('projeto-form')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
         const btnSubmit = e.target.querySelector('button[type="submit"]');
-        btnSubmit.innerText = "Criando..."; btnSubmit.disabled = true;
-
-        const payload = {
-            name: document.getElementById('proj-name').value,
-            description: document.getElementById('proj-desc').value,
-            status: document.getElementById('proj-status').value
-        };
+        btnSubmit.innerText = "Enviando arquivo..."; btnSubmit.disabled = true;
 
         try {
-            // Assumindo que a sua rota de criação no backend seja POST /projects
-            const res = await fetchSeguro('/projects', { method: 'POST', body: JSON.stringify(payload) });
-            if (!res.ok) throw new Error((await res.json()).detail || "Erro ao criar projeto");
+            // Passo 1: Presigned URL
+            const resUpload = await fetchSeguro('/files/upload-url', { 
+                method: 'POST', body: JSON.stringify({ file_name: file.name, content_type: file.type }) 
+            });
+            if (!resUpload.ok) throw new Error("Erro na rota de Upload Segura");
+            const uploadData = await resUpload.json();
             
-            alert("Projeto iniciado com sucesso!");
-            closeModal('modal-projeto');
-            e.target.reset();
-            carregarProjetosAcompanhamento(); // Recarrega a tabela imediatamente
-            carregarProjetosParaDiagnostico(); // Atualiza a lista do Select do Diagnóstico
-            
-        } catch (error) { 
-            alert("Falha na criação: " + error.message); 
-        } finally { 
-            btnSubmit.innerText = "Salvar Projeto"; btnSubmit.disabled = false; 
-        }
+            // Passo 2: Nuvem
+            await fetch(uploadData.upload_url, { method: uploadData.method || 'PUT', body: file, headers: { 'Content-Type': file.type } });
+            btnSubmit.innerText = "Salvando no Banco...";
+
+            // Passo 3: Salva Reembolso
+            const dadosReembolso = {
+                title: document.getElementById('ref-title').value,
+                description: document.getElementById('ref-description').value,
+                category: document.getElementById('ref-category').value,
+                value: parseFloat(document.getElementById('ref-value').value),
+                pix_key: document.getElementById('ref-pix').value,
+                file_url: uploadData.file_url 
+            };
+
+            const resBanco = await fetchSeguro('/reimbursements/', { method: 'POST', body: JSON.stringify(dadosReembolso) });
+            if (!resBanco.ok) throw new Error('Erro ao salvar no banco financeiro.');
+
+            alert("Reembolso enviado e arquivado na Nuvem!");
+            closeModal('modal-reembolso'); e.target.reset(); carregarTabelaReembolsos();
+        } catch (error) { alert("Falha: " + error.message); } 
+        finally { btnSubmit.innerText = "Enviar"; btnSubmit.disabled = false; }
     });
 
-    // Diagnóstico PERT/CCPM
+    // --- MOTOR MATEMÁTICO (PERT/CCPM) ---
     document.getElementById('add-task-row')?.addEventListener('click', (e) => {
         e.preventDefault();
         const tbody = document.getElementById('task-body');
@@ -507,48 +461,10 @@ document.addEventListener('DOMContentLoaded', () => {
         tbody.appendChild(tr);
     });
 
-    // === MOTOR DO PONTO ELETRÔNICO E RELÓGIO ===
-    const relogio = document.getElementById('relogio-local');
-    if (relogio) {
-        setInterval(() => {
-            const agora = new Date();
-            relogio.innerText = agora.toLocaleTimeString('pt-BR');
-        }, 1000);
-    }
-
-    // Botão de Bater Ponto (Requer rota POST /time-records no backend)
-    document.getElementById('btn-bater-ponto')?.addEventListener('click', async (e) => {
-        const btn = e.currentTarget;
-        btn.innerHTML = '<i class="ph ph-spinner-gap"></i> Registrando...';
-        btn.disabled = true;
-
-        try {
-            // O Backend registra a hora exata do servidor, NUNCA confie na hora do navegador do usuário
-            const res = await fetchSeguro('/time-records/punch', { method: 'POST', body: JSON.stringify({}) });
-            if (!res.ok) throw new Error("Erro ao registrar ponto.");
-            
-            alert("Ponto registrado com sucesso no banco de dados!");
-            carregarVisaoIndividual(); // Atualiza a barra de progresso
-        } catch (err) {
-            alert("Falha na comunicação com a API de Ponto: " + err.message);
-        } finally {
-            btn.innerHTML = '<i class="ph ph-fingerprint"></i> Alternar Ponto';
-            btn.disabled = false;
-        }
-    });
-
     document.getElementById('btn-calculate-diag')?.addEventListener('click', async (e) => {
         const btn = e.currentTarget;
-    });
-        document.getElementById('btn-calculate-diag')?.addEventListener('click', async (e) => {
-        const btn = e.currentTarget;
-        
-        // A NOVA TRAVA: Lê diretamente do <select> injetado no HTML
         const projectId = document.getElementById('diag-project-selector').value;
-        
-        if (!projectId) {
-            return alert("ERRO DE OPERAÇÃO: Você precisa selecionar um projeto na lista acima antes de calcular a matriz.");
-        }
+        if (!projectId) return alert("ERRO DE OPERAÇÃO: Selecione um projeto na lista acima antes de calcular.");
 
         const payload = { tasks: {} };
         document.querySelectorAll('#task-body tr').forEach(row => {
@@ -565,7 +481,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        if (Object.keys(payload.tasks).length === 0) return alert("Adicione tarefas.");
+        if (Object.keys(payload.tasks).length === 0) return alert("Adicione tarefas na matriz.");
         btn.innerHTML = '<i class="ph ph-spinner-gap"></i> ...'; btn.disabled = true;
 
         try {
@@ -580,21 +496,20 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('critical-path-text').innerText = data.pert_classico.caminho_critico.join(' -> ');
             document.getElementById('ccpm-meta').innerText = `${ccpm.tempo_agressivo_projeto_horas} h`;
             document.getElementById('ccpm-buffer').innerText = `${ccpm.project_buffer_horas} h`;
-            document.getElementById('buffer-status').innerText = "Matematicamente Protegido";
-        } catch (err) { alert("Falha: " + err.message); } 
-        finally { btn.innerHTML = '<i class="ph ph-calculator"></i> Gerar Diagnóstico'; btn.disabled = false; }
+            document.getElementById('buffer-status').innerText = "Protegido Matematicamente";
+        } catch (err) { alert("Cálculo Rejeitado: " + err.message); } 
+        finally { btn.innerHTML = '<i class="ph ph-calculator"></i> Calcular'; btn.disabled = false; }
     });
 
     document.getElementById('btn-download-pdf')?.addEventListener('click', async () => {
-        const projectId = new URLSearchParams(window.location.search).get('project_id');
-        if (!projectId) return alert("Sem projeto na URL.");
+        const projectId = document.getElementById('diag-project-selector').value;
+        if (!projectId) return alert("Selecione um projeto para gerar o PDF.");
         try {
             const res = await fetchSeguro(`/projects/${projectId}/diagnostic/pdf`);
-            if (!res.ok) throw new Error("Calcule o projeto primeiro.");
+            if (!res.ok) throw new Error("Gere o cálculo na tela antes de exportar.");
             const url = window.URL.createObjectURL(await res.blob());
-            const a = document.createElement('a'); a.href = url; a.download = `Diagnostico_${projectId}.pdf`;
+            const a = document.createElement('a'); a.href = url; a.download = `Diagnostico_Projeto_${projectId}.pdf`;
             document.body.appendChild(a); a.click(); a.remove();
-        } catch (err) { alert("Erro ao baixar: " + err.message); }
+        } catch (err) { alert("Falha na exportação: " + err.message); }
     });
-}
-);
+});
