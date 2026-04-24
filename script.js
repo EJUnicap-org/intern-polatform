@@ -189,21 +189,44 @@ async function carregarTabelaPonto() {
     const tbody = document.getElementById('ponto-list-body');
     if (!tbody) return;
     tbody.innerHTML = '<tr><td colspan="4" class="text-center dim">Carregando histórico...</td></tr>';
+    
     try {
         const res = await fetchSeguro('/clockins/summary'); 
-        if(!res.ok) throw new Error("Erro ao buscar ponto.");
-        const registros = await res.json();
-        if (registros.length === 0) return tbody.innerHTML = '<tr><td colspan="4" class="text-center dim">Nenhum registro encontrado.</td></tr>';
+        if(!res.ok) throw new Error("Erro ao buscar ponto no servidor.");
         
-        tbody.innerHTML = registros.map(r => `
+        let resposta_bruta = await res.json();
+        let registros_array = [];
+
+        // 1. A BLINDAGEM DE TIPOS (Procura o Array dentro do Objeto)
+        if (Array.isArray(resposta_bruta)) {
+            registros_array = resposta_bruta; // Se vier um array limpo, ótimo.
+        } else if (typeof resposta_bruta === 'object' && resposta_bruta !== null) {
+            // Se vier um Objeto, tentamos caçar a chave que guarda a lista (chutes arquiteturais comuns)
+            if (Array.isArray(resposta_bruta.data)) registros_array = resposta_bruta.data;
+            else if (Array.isArray(resposta_bruta.records)) registros_array = resposta_bruta.records;
+            else if (Array.isArray(resposta_bruta.registros)) registros_array = resposta_bruta.registros;
+            else if (Array.isArray(resposta_bruta.historico)) registros_array = resposta_bruta.historico;
+            else throw new Error("A API devolveu um Objeto, mas o Front-end não achou a chave do Array. Abra o F12 (Network).");
+        }
+
+        // 2. Renderização Segura
+        if (registros_array.length === 0) {
+            return tbody.innerHTML = '<tr><td colspan="4" class="text-center dim">Nenhum registro encontrado.</td></tr>';
+        }
+        
+        tbody.innerHTML = registros_array.map(r => `
             <tr>
-                <td><strong>${new Date(r.date || r.created_at).toLocaleDateString('pt-BR')}</strong></td>
-                <td><span class="text-green">${r.entry_time || '--:--'}</span></td>
-                <td><span class="text-yellow">${r.exit_time || '--:--'}</span></td>
-                <td>${r.total_hours || '0'}h</td>
+                <td><strong>${new Date(r.date || r.created_at || r.data || new Date()).toLocaleDateString('pt-BR')}</strong></td>
+                <td><span class="text-green">${r.entry_time || r.entrada || '--:--'}</span></td>
+                <td><span class="text-yellow">${r.exit_time || r.saida || '--:--'}</span></td>
+                <td>${r.total_hours || r.total || '0'}h</td>
             </tr>
         `).join('');
-    } catch (e) { tbody.innerHTML = `<tr><td colspan="4" class="text-center dim" style="color:var(--danger)">${e.message}</td></tr>`; }
+        
+    } catch (e) { 
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center dim" style="color:var(--danger)">${e.message}</td></tr>`; 
+        console.error("Erro na Tabela de Ponto:", e);
+    }
 }
 
 async function carregarTabelaReembolsos() {
