@@ -39,12 +39,14 @@
                 <a href="#" class="nav-link" data-target="ponto"><i class="ph ph-clock"></i> Ponto</a>
                 <a href="#" class="nav-link" data-target="leads"><i class="ph ph-users-three"></i> Leads</a>
                 
-                <p class="menu-label">Administrativo</p>
-                <a href="#" class="nav-link" data-target="psel"><i class="ph ph-identification-card"></i> Processo Seletivo</a>
-                <a href="#" class="nav-link" data-target="time"><i class="ph ph-users"></i> Visão do Time</a>
-                <a href="#" class="nav-link" data-target="reembolsos"><i class="ph ph-hand-coins"></i> Reembolsos</a>
-                <a href="#" class="nav-link" data-target="faltas"><i class="ph ph-calendar-x"></i> Faltas</a>
-                <a href="#" class="nav-link" data-target="diagnostico"><i class="ph ph-math-operations"></i> Diagnóstico PERT</a>
+                <div id="menu-admin" style="display: none;">
+                    <p class="menu-label">Administrativo</p>
+                    <a href="#" class="nav-link" data-target="psel"><i class="ph ph-identification-card"></i> Processo Seletivo</a>
+                    <a href="#" class="nav-link" data-target="time"><i class="ph ph-users"></i> Visão do Time</a>
+                    <a href="#" class="nav-link" data-target="reembolsos"><i class="ph ph-hand-coins"></i> Reembolsos</a>
+                    <a href="#" class="nav-link" data-target="faltas"><i class="ph ph-calendar-x"></i> Faltas</a>
+                    <a href="#" class="nav-link" data-target="diagnostico"><i class="ph ph-math-operations"></i> Diagnóstico PERT</a>
+                </div>
                 
                 <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 10px;"></div>
                 <a href="#" id="btn-logout" class="nav-link" style="color: var(--danger);"><i class="ph ph-sign-out"></i> Sair da Conta</a>
@@ -54,76 +56,38 @@
         <main class="content">
             <header class="top-bar">
                 <div class="dim" style="font-size:14px">Dashboard / <span id="page-title" style="color:white; font-weight:bold;">Acompanhamento</span></div>
-                <div class="avatar-mini" style="width:36px; height:36px;">EU</div>
+                <div class="avatar-mini" style="width:36px; height:36px;" title="Usuário">EU</div>
             </header>
 
             <div id="tab-container">
                 
                 <section id="sec-acompanhamento" class="tab-content active">
-    <div class="header-main flex-between">
-        <div>
-            <h1>Gestão de Projetos</h1>
-            <p class="dim">Acompanhamento e criação de frentes operacionais</p>
-        </div>
-        <button class="btn-primary" onclick="openModal('modal-projeto')" style="width: auto;">
-            <i class="ph ph-plus"></i> Novo Projeto
-        </button>
-    </div>
+                    <div class="header-main flex-between">
+                        <div>
+                            <h1>Gestão de Projetos</h1>
+                            <p class="dim">Acompanhamento e criação de frentes operacionais</p>
+                        </div>
+                        <button class="btn-primary" onclick="openModal('modal-projeto')" style="width: auto;">
+                            <i class="ph ph-plus"></i> Novo Projeto
+                        </button>
+                    </div>
 
-    <div class="card table-container">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Nome do Projeto</th>
-                    <th>Descrição</th>
-                    <th>Status</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody id="projetos-list-body">
-                <tr><td colspan="4" class="text-center dim">Carregando projetos do servidor...</td></tr>
-            </tbody>
-        </table>
-    </div>
-</section>
-
-<div id="modal-projeto" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Criar Novo Projeto</h3>
-            <button class="close-btn" onclick="closeModal('modal-projeto')">&times;</button>
-        </div>
-        <form id="projeto-form">
-            <div class="input-group">
-                <label>Organização (Cliente/Lead)</label>
-                <select id="proj-client" class="dark-input" required>
-                    <option value="">Carregando organizações...</option>
-                </select>
-            </div>
-
-            <div class="input-group">
-                <label>Nome do Projeto</label>
-                <input type="text" id="proj-name" class="dark-input" required placeholder="Ex: Sistema de Gestão Interna">
-            </div>
-            <div class="input-group">
-                <label>Descrição</label>
-                <textarea id="proj-desc" class="dark-input" rows="3" placeholder="Qual o escopo desta entrega?"></textarea>
-            </div>
-            <div class="input-group">
-                <label>Status Inicial</label>
-                <select id="proj-status" class="dark-input">
-                    <option value="Planejamento">Planejamento</option>
-                    <option value="Execução">Execução</option>
-                    <option value="Pausado">Pausado</option>
-                </select>
-            </div>
-            <div class="flex-between" style="justify-content: flex-end; gap: 10px; margin-top: 20px;">
-                <button type="button" class="btn-icon" onclick="closeModal('modal-projeto')" style="width: auto; padding: 0 15px;">Cancelar</button>
-                <button type="submit" class="btn-primary" style="width: auto;">Salvar Projeto</button>
-            </div>
-        </form>
-    </div>
-</div>
+                    <div class="card table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Nome do Projeto</th>
+                                    <th>Descrição</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="projetos-list-body">
+                                <tr><td colspan="4" class="text-center dim">Carregando projetos do servidor...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
 
                 <section id="sec-leads" class="tab-content">
                     <div class="header-main flex-between">
@@ -163,13 +127,12 @@
                                 <tbody id="team-status-list"></tbody>
                             </table>
                         </div>
-                        <div class="card" style="text-align: center;">
-                            <h3>Ocupação Geral</h3>
-                            <div class="circle-chart-container" style="padding-top:20px;">
-                                <div id="team-occupancy-chart" class="circle-chart" style="width:140px; height:140px; background:conic-gradient(var(--primary) 0%, var(--bg-card) 0deg);">
-                                    <div class="chart-content" style="background:var(--bg-panel); width:110px; height:110px; border-radius:50%; display:flex; flex-direction:column; justify-content:center;">
-                                        <strong id="occupancy-percent">0%</strong><span style="font-size:10px">Carga</span>
-                                    </div>
+                        <div class="card" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+                            <h3 style="margin-bottom: 25px; width: 100%;">Ocupação Geral</h3>
+                            <div id="team-occupancy-chart" style="width: 150px; height: 150px; border-radius: 50%; background: conic-gradient(var(--primary) 0%, var(--bg-card) 0deg); display: flex; align-items: center; justify-content: center; transition: background 0.5s ease;">
+                                <div style="background: var(--bg-panel); width: 115px; height: 115px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                                    <strong id="occupancy-percent" style="font-size: 32px; color: var(--text-main);">0%</strong>
+                                    <span class="dim" style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Carga</span>
                                 </div>
                             </div>
                         </div>
@@ -178,22 +141,22 @@
                 
                 <section id="sec-diagnostico" class="tab-content">
                     <div class="header-main flex-between" style="align-items: flex-end;">
-        <div>
-            <h1>Diagnóstico de Projeto</h1>
-            <p class="dim">Selecione o projeto ativo para realizar a análise matemática.</p>
-        </div>
-        <div style="display: flex; gap: 15px; align-items: center;">
-            <div style="min-width: 250px;">
-                <select id="diag-project-selector" class="dark-input" style="margin-top: 0; padding: 10px; cursor: pointer;">
-                    <option value="">Carregando projetos...</option>
-                </select>
-            </div>
-            <div style="display:flex; gap:10px;">
-                <button class="btn-icon" id="btn-download-pdf" title="Baixar PDF"><i class="ph ph-file-pdf"></i></button>
-                <button class="btn-primary" id="btn-calculate-diag"><i class="ph ph-calculator"></i> Calcular</button>
-            </div>
-        </div>
-    </div>
+                        <div>
+                            <h1>Diagnóstico de Projeto</h1>
+                            <p class="dim">Selecione o projeto ativo para realizar a análise matemática.</p>
+                        </div>
+                        <div style="display: flex; gap: 15px; align-items: center;">
+                            <div style="min-width: 250px;">
+                                <select id="diag-project-selector" class="dark-input" style="margin-top: 0; padding: 10px; cursor: pointer;">
+                                    <option value="">Carregando projetos...</option>
+                                </select>
+                            </div>
+                            <div style="display:flex; gap:10px;">
+                                <button class="btn-icon" id="btn-download-pdf" title="Baixar PDF"><i class="ph ph-file-pdf"></i></button>
+                                <button class="btn-primary" id="btn-calculate-diag"><i class="ph ph-calculator"></i> Calcular</button>
+                            </div>
+                        </div>
+                    </div>
                     <div class="dashboard-grid-1-6">
                         <div class="card table-container" style="margin-top:0">
                             <div class="flex-between" style="margin-bottom:15px"><h3>Matriz</h3><button class="btn-outline-sm" id="add-task-row" style="width:auto">+ Tarefa</button></div>
@@ -226,7 +189,6 @@
                             <p class="dim">Gestão das suas tarefas ativas e registro de ponto</p>
                         </div>
                     </div>
-                    
                     <div class="dashboard-grid-1-6">
                         <div class="card table-container" style="margin-top: 0;">
                             <div class="card-header">
@@ -247,19 +209,20 @@
                                 </tbody>
                             </table>
                         </div>
-
                         <div class="card" style="text-align: center; border-top: 4px solid var(--primary);">
                             <h3>Ponto Eletrônico</h3>
                             <p class="dim small" style="margin-bottom: 20px;">Meta semanal da EJ: 20h</p>
-
                             <div style="font-size: 42px; font-weight: bold; font-family: monospace; color: var(--text-main); margin: 20px 0;" id="relogio-local">
                                 00:00:00
                             </div>
-
+                            <!-- O NOVO VELOCÍMETRO DE TURNO -->
+                            <div id="turno-container" style="display: none; margin-bottom: 20px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
+                                <span class="dim small" style="text-transform: uppercase; letter-spacing: 1px;">Tempo de Turno Atual</span><br>
+                                <strong id="turno-timer" style="font-size: 28px; font-family: monospace; transition: all 0.3s; color: var(--success);">00:00:00</strong>
+                            </div>
                             <button class="btn-primary" id="btn-bater-ponto" style="margin-bottom: 20px; font-size: 16px;">
                                 <i class="ph ph-fingerprint"></i> Registrar Entrada / Saída
                             </button>
-
                             <div style="text-align: left; background: var(--input-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
                                 <div class="flex-between" style="margin-bottom: 8px;">
                                     <span class="dim small">Progresso Semanal</span>
@@ -280,14 +243,12 @@
                             <p class="dim">Seus dados consolidados da semana atual</p>
                         </div>
                     </div>
-                    
                     <div class="dashboard-grid-1-6">
                         <div class="card" style="display: flex; flex-direction: column; justify-content: center; align-items: center; border-top: 4px solid var(--primary);">
                             <h3 style="margin-bottom: 10px;">Tempo Trabalhado na Semana</h3>
                             <strong id="ponto-total-horas" style="font-size: 56px; color: var(--success); font-family: monospace;">0h 0m</strong>
                             <p class="dim" style="margin-top: 10px;">Baseado em <span id="ponto-total-minutos">0</span> minutos contabilizados no servidor.</p>
                         </div>
-
                         <div class="card" style="text-align: center;">
                             <h3 style="margin-bottom: 20px;">Status Atual do Turno</h3>
                             <div id="ponto-status-badge" style="font-size: 20px; font-weight: bold; padding: 20px; border-radius: 8px; background: var(--input-bg); border: 1px solid var(--border); margin-bottom: 20px;">
@@ -318,36 +279,48 @@
                     </div>
                 </section>
                 
-                <section id="sec-psel" class="tab-content"><p class="dim text-center">Módulo de PSEL bloqueado para a próxima release.</p></section>
-                <section id="sec-ponto" class="tab-content">
-                    <div class="header-main flex-between">
-                        <div>
-                            <h1>Resumo de Ponto</h1>
-                            <p class="dim">Seus dados consolidados da semana atual</p>
-                        </div>
-                    </div>
-                    
-                    <div class="dashboard-grid-1-6">
-                        <div class="card" style="display: flex; flex-direction: column; justify-content: center; align-items: center; border-top: 4px solid var(--primary);">
-                            <h3 style="margin-bottom: 10px;">Tempo Trabalhado na Semana</h3>
-                            <strong id="ponto-total-horas" style="font-size: 56px; color: var(--success); font-family: monospace;">0h 0m</strong>
-                            <p class="dim" style="margin-top: 10px;">Baseado em <span id="ponto-total-minutos">0</span> minutos contabilizados no servidor.</p>
-                        </div>
-
-                        <div class="card" style="text-align: center;">
-                            <h3 style="margin-bottom: 20px;">Status Atual do Turno</h3>
-                            <div id="ponto-status-badge" style="font-size: 20px; font-weight: bold; padding: 20px; border-radius: 8px; background: var(--input-bg); border: 1px solid var(--border); margin-bottom: 20px;">
-                                Sincronizando...
-                            </div>
-                            <p class="dim small" id="ponto-start-text">Aguardando dados...</p>
-                        </div>
-                    </div>
-                </section>
-                <section id="sec-psel" class="tab-content"><p class="dim">Em desenvolvimento...</p></section>
-                <section id="sec-faltas" class="tab-content"><p class="dim">Em desenvolvimento...</p></section>
+                <section id="sec-psel" class="tab-content"><p class="dim text-center" style="margin-top: 40px;">Módulo de PSEL bloqueado para a próxima release.</p></section>
 
             </div>
         </main>
+    </div>
+
+    <!-- Modais -->
+    <div id="modal-projeto" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Criar Novo Projeto</h3>
+                <button class="close-btn" onclick="closeModal('modal-projeto')">&times;</button>
+            </div>
+            <form id="projeto-form">
+                <div class="input-group">
+                    <label>Organização (Cliente/Lead)</label>
+                    <select id="proj-client" class="dark-input" required>
+                        <option value="">Carregando organizações...</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Nome do Projeto</label>
+                    <input type="text" id="proj-name" class="dark-input" required placeholder="Ex: Sistema de Gestão Interna">
+                </div>
+                <div class="input-group">
+                    <label>Descrição</label>
+                    <textarea id="proj-desc" class="dark-input" rows="3" placeholder="Qual o escopo desta entrega?"></textarea>
+                </div>
+                <div class="input-group">
+                    <label>Status Inicial</label>
+                    <select id="proj-status" class="dark-input">
+                        <option value="Planejamento">Planejamento</option>
+                        <option value="Execução">Execução</option>
+                        <option value="Pausado">Pausado</option>
+                    </select>
+                </div>
+                <div class="flex-between" style="justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                    <button type="button" class="btn-icon" onclick="closeModal('modal-projeto')" style="width: auto; padding: 0 15px;">Cancelar</button>
+                    <button type="submit" class="btn-primary" style="width: auto;">Salvar Projeto</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <div id="modal-lead" class="modal">

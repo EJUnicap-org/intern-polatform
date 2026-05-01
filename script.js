@@ -3,11 +3,34 @@
 // ==========================================
 const API_BASE_URL = 'https://api-intern-platform.onrender.com';
 
+function decodificarJWT(token) {
+    try {
+        const payloadBase64 = token.split('.')[1];
+        const jsonString = atob(payloadBase64);
+        return JSON.parse(jsonString);
+    } catch (e) {
+        return null; 
+    }
+}
+
 function entrarNoSistema() {
     const login = document.getElementById('login-container');
     const dash = document.getElementById('main-dashboard');
     if (login) login.style.display = 'none';
     if (dash) dash.style.display = 'flex';
+
+    // RBAC: Controle de Acesso Visual
+    const token = localStorage.getItem('token_ej');
+    const payload = decodificarJWT(token);
+    const menuAdmin = document.getElementById('menu-admin');
+    
+    if (menuAdmin) {
+        if (payload && payload.role === 'ADMIN') {
+            menuAdmin.style.display = 'block';
+        } else {
+            menuAdmin.style.display = 'none';
+        }
+    }
 }
 
 function exibirLogin() {
@@ -39,7 +62,6 @@ async function fetchSeguro(endpoint, opcoes = {}) {
     return fetch(`${API_BASE_URL}${endpoint}`, { ...opcoes, headers });
 }
 
-// Helpers de Manipulação Dinâmica
 function addContactField() {
     const container = document.getElementById('contacts-container');
     if (!container) return;
@@ -68,7 +90,6 @@ async function carregarVisaoIndividual() {
         if (!res.ok) throw new Error("Sessão inválida ou acesso negado.");
         const usuario = await res.json();
 
-        // UI: Atualiza a Identidade do Usuário no Topo
         const avatarBox = document.querySelector('.avatar-mini');
         if (avatarBox && usuario.nome) {
             avatarBox.innerText = usuario.nome.substring(0, 2).toUpperCase();
@@ -77,7 +98,6 @@ async function carregarVisaoIndividual() {
         const tituloH1 = document.querySelector('#sec-individual h1');
         if (tituloH1 && usuario.nome) tituloH1.innerText = `Olá, ${usuario.nome.split(' ')[0]}`;
 
-        // 1. Tarefas
         if (!usuario.tarefas || usuario.tarefas.length === 0) {
             tbody.innerHTML = '<tr><td colspan="4" class="text-center dim">Nenhuma tarefa atribuída a você no momento.</td></tr>';
         } else {
@@ -91,7 +111,6 @@ async function carregarVisaoIndividual() {
             `).join('');
         }
 
-        // 2. Progresso do Ponto
         const horasFeitas = parseFloat(usuario.horas_semanais) || 0;
         const meta = 20; 
         const porcentagem = Math.min((horasFeitas / meta) * 100, 100);
@@ -102,7 +121,24 @@ async function carregarVisaoIndividual() {
         if (textoHoras) textoHoras.innerText = `${horasFeitas}h / ${meta}h`;
         if (barraPonto) barraPonto.style.width = `${porcentagem}%`;
 
-    } catch (err) { tbody.innerHTML = `<tr><td colspan="4" class="text-center" style="color:var(--danger)">${err.message}</td></tr>`; }
+        // Verifica turno real se a API estiver online
+        const resResumo = await fetchSeguro('/clockins/summary');
+        if (resResumo.ok) {
+            const resumo = await resResumo.json();
+            const turnoContainer = document.getElementById('turno-container');
+            
+            if (resumo.is_working && resumo.current_start_time) {
+                window.turnoStartTime = new Date(resumo.current_start_time);
+                if (turnoContainer) turnoContainer.style.display = 'block';
+            } else {
+                window.turnoStartTime = null;
+                if (turnoContainer) turnoContainer.style.display = 'none';
+            }
+        }
+
+    } catch (err) { 
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center" style="color:var(--danger)">${err.message}</td></tr>`; 
+    }
 }
 
 async function carregarLeads() {
@@ -186,14 +222,12 @@ async function carregarProjetosParaDiagnostico() {
 }
 
 async function carregarTabelaPonto() {
-    // Mantivemos o nome da função para não precisar alterar os gatilhos das abas na linha 281
     try {
         const res = await fetchSeguro('/clockins/summary'); 
         if(!res.ok) throw new Error("Erro ao buscar resumo do ponto no servidor.");
         
-        const dados = await res.json(); // { worked_minutes_this_week: X, is_working: bool, current_start_time: str }
+        const dados = await res.json(); 
 
-        // 1. Conversão Matemática Rigorosa (Minutos -> Horas e Minutos)
         const totalMinutos = dados.worked_minutes_this_week || 0;
         const horas = Math.floor(totalMinutos / 60);
         const minutosRestantes = totalMinutos % 60;
@@ -204,7 +238,6 @@ async function carregarTabelaPonto() {
         if (painelHoras) painelHoras.innerText = `${horas}h ${minutosRestantes}m`;
         if (painelMinutos) painelMinutos.innerText = totalMinutos;
 
-        // 2. Tradução do Status
         const badgeStatus = document.getElementById('ponto-status-badge');
         const textStart = document.getElementById('ponto-start-text');
 
@@ -285,23 +318,24 @@ async function carregarDadosTime() {
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     
-    // Auth Check
     const token = localStorage.getItem('token_ej');
     if (token) entrarNoSistema(); else exibirLogin();
 
-    // Login Form
     const formLogin = document.getElementById('form-login');
     if (formLogin) {
         formLogin.addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btn-entrar');
             const errorMsg = document.getElementById('login-error');
+            const emailDigitado = document.getElementById('user-email').value;
+            const senhaDigitada = document.getElementById('user-pass').value;
+
             btn.innerText = "Autenticando..."; btn.disabled = true;
             if(errorMsg) errorMsg.style.display = 'none';
 
             const corpo = new URLSearchParams();
-            corpo.append('username', document.getElementById('user-email').value);
-            corpo.append('password', document.getElementById('user-pass').value);
+            corpo.append('username', emailDigitado);
+            corpo.append('password', senhaDigitada);
 
             try {
                 const res = await fetch(`${API_BASE_URL}/auth/login`, { 
@@ -323,12 +357,43 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-logout')?.addEventListener('click', (e) => {
         e.preventDefault(); localStorage.removeItem('token_ej'); window.location.reload(); 
     });
-
-    // Relógio do Ponto Eletrônico
+    // Relógio e Motor do Velocímetro de Turno
     const relogio = document.getElementById('relogio-local');
-    if (relogio) setInterval(() => { relogio.innerText = new Date().toLocaleTimeString('pt-BR'); }, 1000);
+    const turnoTimer = document.getElementById('turno-timer');
 
-    // Navegação (Tabs) e Gatilhos de API
+    setInterval(() => {
+        const agora = new Date();
+        
+        // Relógio normal da tela
+        if (relogio) relogio.innerText = agora.toLocaleTimeString('pt-BR');
+
+        // Lógica do Velocímetro de Turno
+        if (window.turnoStartTime && turnoTimer) {
+            const diffMs = agora - window.turnoStartTime; // Diferença em Milissegundos
+            
+            const horas = Math.floor(diffMs / 3600000);
+            const minutos = Math.floor((diffMs % 3600000) / 60000);
+            const segundos = Math.floor((diffMs % 60000) / 1000);
+
+            turnoTimer.innerText = 
+                String(horas).padStart(2, '0') + ':' + 
+                String(minutos).padStart(2, '0') + ':' + 
+                String(segundos).padStart(2, '0');
+
+            // A TRAVA DE 4 HORAS (O "Velocímetro Vermelho")
+            if (horas >= 4) {
+                turnoTimer.style.color = 'var(--danger)';
+                turnoTimer.style.textShadow = '0 0 15px rgba(239, 68, 68, 0.4)';
+            } else if (horas >= 3 && minutos >= 30) {
+                // Alerta amarelo meia hora antes de estourar
+                turnoTimer.style.color = 'var(--warning)';
+                turnoTimer.style.textShadow = 'none';
+            } else {
+                turnoTimer.style.color = 'var(--success)';
+                turnoTimer.style.textShadow = 'none';
+            }
+        }
+    }, 1000);
     const links = document.querySelectorAll('.nav-link[data-target]');
     const sections = document.querySelectorAll('.tab-content');
     links.forEach(link => {
@@ -347,7 +412,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const titleDisplay = document.getElementById('page-title');
             if (titleDisplay) titleDisplay.innerText = this.innerText.trim();
 
-            // Dispara as consultas ao banco dependendo da aba
             if (targetId === 'individual') carregarVisaoIndividual();
             if (targetId === 'ponto') carregarTabelaPonto();
             if (targetId === 'leads') carregarLeads();
@@ -361,14 +425,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Feedback visual dos Inputs de Arquivo
     document.getElementById('file-reembolso')?.addEventListener('change', e => {
         document.getElementById('file-name-display').innerText = e.target.files[0]?.name || "Arraste ou clique";
     });
 
-    // --- FORMULÁRIOS DE INTEGRAÇÃO COM BACKEND ---
+    // --- FORMULÁRIOS DE INTEGRAÇÃO ---
 
-    // 1. Registro de Ponto
     document.getElementById('btn-bater-ponto')?.addEventListener('click', async (e) => {
         const btn = e.currentTarget;
         btn.innerHTML = '<i class="ph ph-spinner-gap"></i> Registrando...'; btn.disabled = true;
@@ -376,12 +438,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetchSeguro('/clockins/register', { method: 'POST', body: JSON.stringify({}) });
             if (!res.ok) throw new Error("Erro ao registrar ponto.");
             alert("Ponto registrado com sucesso!");
+            carregarTabelaPonto(); 
             carregarVisaoIndividual(); 
         } catch (err) { alert("Falha na API de Ponto: " + err.message); } 
         finally { btn.innerHTML = '<i class="ph ph-fingerprint"></i> Registrar Entrada / Saída'; btn.disabled = false; }
     });
 
-    // 2. Projetos Form (O Contrato que quebrou antes)
     document.getElementById('projeto-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const btnSubmit = e.target.querySelector('button[type="submit"]');
@@ -392,12 +454,12 @@ document.addEventListener('DOMContentLoaded', () => {
             description: document.getElementById('proj-desc').value,
             status: document.getElementById('proj-status').value,
             organization_id: parseInt(document.getElementById('proj-client').value) || null,
-            member_ids: [] // Obrigatório pelo schema
+            member_ids: [] 
         };
 
         try {
             const res = await fetchSeguro('/projects/', { method: 'POST', body: JSON.stringify(payload) });
-            if (!res.ok) throw new Error((await res.json()).detail || "Erro de Validação Pydantic");
+            if (!res.ok) throw new Error((await res.json()).detail || "Erro de Validação");
             alert("Projeto iniciado com sucesso!");
             closeModal('modal-projeto'); e.target.reset();
             carregarProjetosAcompanhamento(); 
@@ -406,7 +468,6 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { btnSubmit.innerText = "Salvar Projeto"; btnSubmit.disabled = false; }
     });
 
-    // 3. Leads Form
     document.getElementById('lead-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const btnSubmit = e.target.querySelector('button[type="submit"]');
@@ -433,7 +494,6 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { btnSubmit.innerText = "Salvar Organização"; btnSubmit.disabled = false; }
     });
 
-    // 4. Reembolso Form (O Fluxo de 3 Passos: R2 + Banco)
     document.getElementById('reembolso-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const file = document.getElementById('file-reembolso').files[0];
@@ -442,18 +502,15 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSubmit.innerText = "Enviando arquivo..."; btnSubmit.disabled = true;
 
         try {
-            // Passo 1: Presigned URL
             const resUpload = await fetchSeguro('/files/upload-url', { 
                 method: 'POST', body: JSON.stringify({ file_name: file.name, content_type: file.type }) 
             });
             if (!resUpload.ok) throw new Error("Erro na rota de Upload Segura");
             const uploadData = await resUpload.json();
             
-            // Passo 2: Nuvem
             await fetch(uploadData.upload_url, { method: uploadData.method || 'PUT', body: file, headers: { 'Content-Type': file.type } });
             btnSubmit.innerText = "Salvando no Banco...";
 
-            // Passo 3: Salva Reembolso
             const dadosReembolso = {
                 title: document.getElementById('ref-title').value,
                 description: document.getElementById('ref-description').value,
@@ -472,7 +529,6 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { btnSubmit.innerText = "Enviar"; btnSubmit.disabled = false; }
     });
 
-    // --- MOTOR MATEMÁTICO (PERT/CCPM) ---
     document.getElementById('add-task-row')?.addEventListener('click', (e) => {
         e.preventDefault();
         const tbody = document.getElementById('task-body');
