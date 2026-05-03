@@ -67,7 +67,7 @@
                             <h1>Gestão de Projetos</h1>
                             <p class="dim">Acompanhamento e criação de frentes operacionais</p>
                         </div>
-                        <button class="btn-primary" onclick="openModal('modal-projeto')" style="width: auto;">
+                        <button class="btn-primary" onclick="prepararNovoProjeto()" style="width: auto;">
                             <i class="ph ph-plus"></i> Novo Projeto
                         </button>
                     </div>
@@ -293,6 +293,7 @@
                 <button class="close-btn" onclick="closeModal('modal-projeto')">&times;</button>
             </div>
             <form id="projeto-form">
+                <input type="hidden" id="proj-edit-id" value="">
                 <div class="input-group">
                     <label>Organização (Cliente/Lead)</label>
                     <select id="proj-client" class="dark-input" required>
@@ -310,13 +311,32 @@
                 <div class="input-group">
                     <label>Status Inicial</label>
                     <select id="proj-status" class="dark-input">
-                        <option value="Planejamento">Planejamento</option>
-                        <option value="Execução">Execução</option>
-                        <option value="Pausado">Pausado</option>
+                        <option value="NEGOCIACAO">Planejamento / Negociação</option>
+                        <option value="EXECUCAO">Em Execução</option>
+                        <option value="CANCELED">Pausado / Cancelado</option>
+                        <option value="CONCLUIDO">Concluído</option>
                     </select>
+                </div>
+                <div class="input-group">
+                    <label>Equipe Alocada (Membros)</label>
+                    <div id="proj-members-list" class="dark-input" style="max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 10px; background: var(--bg-main);">
+                        <span class="dim small">Carregando time...</span>
+                    </div>
                 </div>
                 <div class="flex-between" style="justify-content: flex-end; gap: 10px; margin-top: 20px;">
                     <button type="button" class="btn-icon" onclick="closeModal('modal-projeto')" style="width: auto; padding: 0 15px;">Cancelar</button>
+                    <div id="task-delegation-section" style="display: none; margin-top: 20px; padding: 15px; border: 1px dashed var(--border); border-radius: 8px; background: rgba(0,0,0,0.2);">
+                    <label style="font-size: 13px; color: var(--text-dim); font-weight: 500; margin-bottom: 10px; display: block;">Delegar Nova Tarefa para a Equipe</label>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <input type="text" id="new-task-title" class="dark-input" placeholder="Ex: Configurar banco de dados" style="flex: 1;">
+                        <select id="new-task-assignee" class="dark-input" style="width: 150px;">
+                            <option value="">Selecione...</option>
+                            <!-- Povoado via JS com os membros checados -->
+                        </select>
+                        <button type="button" class="btn-primary" onclick="delegarTarefa()" style="width: auto; padding: 0 15px;"><i class="ph ph-plus"></i></button>
+                    </div>
+                    <p id="task-delegation-feedback" class="dim small" style="margin: 0;"></p>
+                </div>
                     <button type="submit" class="btn-primary" style="width: auto;">Salvar Projeto</button>
                 </div>
             </form>
@@ -348,7 +368,13 @@
                 <div class="input-group"><label>Descrição</label><textarea id="ref-description" class="dark-input"></textarea></div>
                 <div class="stats-grid">
                     <div class="input-group"><label>Valor (R$)</label><input type="number" step="0.01" id="ref-value" class="dark-input" required></div>
-                    <div class="input-group"><label>Categoria</label><select id="ref-category" class="dark-input"><option>Transporte</option><option>Alimentação</option></select></div>
+                    <div class="input-group"><label>Categoria</label><select id="categoria" name="categoria" class="dark-input">
+                        <option value="ALIMENTACAO">Alimentação</option>
+                        <option value="TRANSPORTE">Transporte</option>
+                        <option value="COMBUSTIVEL">COMBUSTIVEL</option>
+                        <option value="MATERIAL">MATERIAL</option>
+                        <option value="OUTROS">OUTROS</option>
+                    </select></div>
                 </div>
                 <div class="input-group"><label>Chave PIX</label><input type="text" id="ref-pix" class="dark-input" required></div>
                 <div class="input-group">
@@ -359,6 +385,35 @@
                     </div>
                 </div>
                 <div class="flex-between" style="justify-content:flex-end; gap:10px; margin-top:20px;"><button type="button" class="btn-icon" onclick="closeModal('modal-reembolso')" style="width:auto; padding:0 15px;">Cancelar</button><button type="submit" class="btn-primary" style="width:auto;">Enviar</button></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Bandeiras -->
+    <div id="modal-flag" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 style="color: var(--danger);">Aplicar Bandeira</h3>
+                <button class="close-btn" onclick="closeModal('modal-flag')">&times;</button>
+            </div>
+            <form id="flag-form">
+                <input type="hidden" id="flag-target-id">
+                <p class="dim" style="margin-bottom: 20px;">Membro Alvo: <strong id="flag-target-name" style="color: white;">---</strong></p>
+                <div class="input-group">
+                    <label>Severidade</label>
+                    <select id="flag-severity" class="dark-input">
+                        <option value="WARNING">Aviso Simples (Warning)</option>
+                        <option value="FORMAL">Bandeira Formal</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Motivo da Infração</label>
+                    <textarea id="flag-reason" class="dark-input" rows="3" required placeholder="Justifique a aplicação da bandeira sob as regras da EJ..."></textarea>
+                </div>
+                <div class="flex-between" style="justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                    <button type="button" class="btn-icon" onclick="closeModal('modal-flag')" style="width: auto; padding: 0 15px;">Cancelar</button>
+                    <button type="submit" class="btn-primary" style="width: auto; background: var(--danger);">Registrar Punição</button>
+                </div>
             </form>
         </div>
     </div>

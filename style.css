@@ -129,3 +129,12 @@ body { background: var(--bg-main); color: var(--text-main); overflow: hidden; he
 .progress-bar { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin-top: 5px;}
 .progress-fill { height: 100%; background: var(--primary); transition: width 0.3s ease; }
 .buffer-container .progress-fill { background: var(--success); }
+
+/* Correção do overflow para caminhos críticos muito longos */
+#critical-path-text {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    display: block; /* Garante que respeite as margens da div pai */
+    max-width: 100%;
+    line-height: 1.5;
+}

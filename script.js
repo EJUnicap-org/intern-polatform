@@ -1,7 +1,9 @@
 // ==========================================
 // 1. CONFIGURAÇÕES E FUNÇÕES GLOBAIS
 // ==========================================
-const API_BASE_URL = 'https://api-intern-platform.onrender.com';
+const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://127.0.0.1:8000'
+    : 'https://api-intern-platform.onrender.com';
 
 function decodificarJWT(token) {
     try {
@@ -98,17 +100,33 @@ async function carregarVisaoIndividual() {
         const tituloH1 = document.querySelector('#sec-individual h1');
         if (tituloH1 && usuario.nome) tituloH1.innerText = `Olá, ${usuario.nome.split(' ')[0]}`;
 
-        if (!usuario.tarefas || usuario.tarefas.length === 0) {
+        const listaTarefas = usuario.tarefas || usuario.tasks || [];
+
+        if (listaTarefas.length === 0) {
             tbody.innerHTML = '<tr><td colspan="4" class="text-center dim">Nenhuma tarefa atribuída a você no momento.</td></tr>';
         } else {
-            tbody.innerHTML = usuario.tarefas.map(t => `
+            tbody.innerHTML = listaTarefas.map(t => {
+                // Caça o nome do projeto (depende de como o Back-end serializou)
+                const nomeDoProjeto = t.projeto_nome || (t.project ? t.project.title : 'Projeto Interno');
+                // Caça o título da tarefa
+                const tituloDaTarefa = t.title || t.nome || 'Tarefa sem título';
+                // Formata o status
+                const statusDaTarefa = typeof t.status === 'object' ? t.status.value : (t.status || 'Pendente');
+
+                return `
                 <tr>
-                    <td><strong>${t.nome}</strong></td>
-                    <td class="dim">${t.projeto_nome || 'Interno'}</td>
-                    <td><span class="status-badge status-${(t.status || 'pendente').toLowerCase()}">${t.status || 'Pendente'}</span></td>
-                    <td><button class="btn-outline-sm" style="width: auto;" title="Concluir"><i class="ph ph-check"></i></button></td>
+                    <td><strong>${tituloDaTarefa}</strong></td>
+                    <td class="dim">${nomeDoProjeto}</td>
+                    <td><span class="status-badge status-${statusDaTarefa.toLowerCase()}">${statusDaTarefa}</span></td>
+                    <td>
+                        ${statusDaTarefa !== 'CONCLUIDO' && statusDaTarefa !== 'COMPLETED' ? 
+                        `<button class="btn-outline-sm" onclick="concluirTarefa(${t.id})" style="width: auto;" title="Concluir"><i class="ph ph-check"></i></button>` 
+                        : '<span class="dim small"><i class="ph ph-check-circle" style="color: var(--success)"></i></span>'
+                        }
+                    </td>
                 </tr>
-            `).join('');
+                `;
+            }).join('');
         }
 
         const horasFeitas = parseFloat(usuario.horas_semanais) || 0;
@@ -140,6 +158,27 @@ async function carregarVisaoIndividual() {
         tbody.innerHTML = `<tr><td colspan="4" class="text-center" style="color:var(--danger)">${err.message}</td></tr>`; 
     }
 }
+
+window.concluirTarefa = async function(taskId) {
+    if (!confirm("Deseja realmente marcar esta tarefa como concluída?")) return;
+
+    try {
+        const res = await fetchSeguro(`/tasks/${taskId}/complete`, {
+            method: 'PATCH'
+        });
+
+        if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.detail || "Erro ao tentar concluir a tarefa.");
+        }
+
+        // Recarrega a tabela para atualizar a UI imediatamente
+        carregarVisaoIndividual();
+
+    } catch (err) {
+        alert("Falha: " + err.message);
+    }
+};
 
 async function carregarLeads() {
     const listBody = document.getElementById('leads-list-body');
@@ -174,20 +213,137 @@ async function carregarProjetosAcompanhamento() {
         
         if (projetos.length === 0) return listBody.innerHTML = '<tr><td colspan="4" class="text-center dim">Nenhum projeto ativo.</td></tr>';
         
+        // CORREÇÃO: Estrutura da tabela recuperada com sucesso
         listBody.innerHTML = projetos.map(p => `
             <tr>
                 <td><strong>${p.title || p.name || 'Projeto sem nome'}</strong></td>
                 <td class="dim">${(p.description || '').substring(0, 50)}...</td>
                 <td><span class="status-badge status-${(p.status||'planejamento').toLowerCase()}">${p.status || 'Planejamento'}</span></td>
                 <td>
-                    <button class="btn-outline-sm" title="Ir para Diagnóstico Matemático" onclick="abrirDiagnosticoDoProjeto(${p.id})" style="width: auto; font-size: 12px;">
-                        <i class="ph ph-math-operations"></i> Diagnóstico
-                    </button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn-outline-sm" title="Editar Projeto" onclick="prepararEdicaoProjeto(${p.id})" style="width: auto; font-size: 12px;">
+                            <i class="ph ph-pencil"></i> Editar
+                        </button>
+                        <button class="btn-outline-sm" title="Ir para Diagnóstico Matemático" onclick="abrirDiagnosticoDoProjeto(${p.id})" style="width: auto; font-size: 12px;">
+                            <i class="ph ph-math-operations"></i> Diagnóstico
+                        </button>
+                    </div>
                 </td>
             </tr>
         `).join('');
     } catch (err) { listBody.innerHTML = `<tr><td colspan="4" class="text-center" style="color:var(--danger)">${err.message}</td></tr>`; }
 }
+
+window.prepararNovoProjeto = async function() {
+    // CORREÇÃO: Limpeza rigorosa do modal contra vazamento de estado
+    document.getElementById('projeto-form').reset();
+    document.getElementById('proj-edit-id').value = "";
+    document.querySelector('#modal-projeto .modal-header h3').innerText = "Criar Novo Projeto";
+    document.querySelector('#projeto-form button[type="submit"]').innerText = "Salvar Projeto";
+    
+    if (document.querySelectorAll('.member-checkbox').length === 0) {
+        await carregarCheckboxesDeMembros();
+    } else {
+        document.querySelectorAll('.member-checkbox').forEach(cb => cb.checked = false);
+    }
+
+    const delegationSection = document.getElementById('task-delegation-section');
+    if (delegationSection) delegationSection.style.display = 'none';
+    openModal('modal-projeto');
+};
+
+window.delegarTarefa = async function() {
+    const projectId = document.getElementById('proj-edit-id').value;
+    const taskTitle = document.getElementById('new-task-title').value.trim();
+    const assigneeId = document.getElementById('new-task-assignee').value;
+    const feedback = document.getElementById('task-delegation-feedback');
+
+    if (!projectId) return alert("Erro: O projeto precisa ser salvo antes de delegar tarefas.");
+    if (!taskTitle) return alert("Digite o título da tarefa.");
+    if (!assigneeId) return alert("Selecione um membro para executar a tarefa.");
+
+    feedback.innerText = "Delegando...";
+    feedback.style.color = "var(--text-dim)";
+
+    try {
+        const payload = {
+            title: taskTitle,
+            assigned_to_id: parseInt(assigneeId)
+        };
+
+        const res = await fetchSeguro(`/projects/${projectId}/tasks`, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.detail || "Erro ao delegar.");
+        }
+
+        feedback.innerText = "Tarefa delegada com sucesso!";
+        feedback.style.color = "var(--success)";
+        
+        document.getElementById('new-task-title').value = "";
+        
+
+    } catch (err) {
+        feedback.innerText = "Falha: " + err.message;
+        feedback.style.color = "var(--danger)";
+    }
+};
+
+window.prepararEdicaoProjeto = async function(id) {
+    try {
+        // 1. Garante que as checkboxes existam
+        if (document.querySelectorAll('.member-checkbox').length === 0) {
+            await carregarCheckboxesDeMembros();
+        }
+
+        const res = await fetchSeguro(`/projects/${id}`);
+        if (!res.ok) throw new Error("Erro ao buscar dados do projeto.");
+        const projeto = await res.json();
+        
+        document.getElementById('proj-edit-id').value = projeto.id;
+        document.getElementById('proj-name').value = projeto.title || projeto.name;
+        document.getElementById('proj-desc').value = projeto.description || '';
+        document.getElementById('proj-status').value = projeto.status || 'Planejamento';
+        document.getElementById('proj-client').value = projeto.organization_id || "";
+        
+        // 2. Limpa todas as caixinhas primeiro (Prevenção de State Leakage)
+        document.querySelectorAll('.member-checkbox').forEach(cb => cb.checked = false);
+
+        // 3. Marca quem já está na equipe (o backend deve retornar "members" dentro do projeto)
+        if (projeto.members && Array.isArray(projeto.members)) {
+            projeto.members.forEach(membro => {
+                const cb = document.querySelector(`.member-checkbox[value="${membro.id}"]`);
+                if (cb) cb.checked = true;
+            });
+        }
+
+        const delegationSection = document.getElementById('task-delegation-section');
+        const assigneeSelect = document.getElementById('new-task-assignee');
+        
+        if (delegationSection && assigneeSelect) {
+            delegationSection.style.display = 'block'; // Mostra a seção
+            assigneeSelect.innerHTML = '<option value="">Selecione...</option>'; // Reseta
+            
+            // Povoa o select apenas com quem já está na equipe
+            if (projeto.members && Array.isArray(projeto.members)) {
+                projeto.members.forEach(membro => {
+                    assigneeSelect.innerHTML += `<option value="${membro.id}">${membro.name}</option>`;
+                });
+            }
+        }
+        
+        document.querySelector('#modal-projeto .modal-header h3').innerText = "Editar Projeto";
+        document.querySelector('#projeto-form button[type="submit"]').innerText = "Salvar Alterações";
+        
+        openModal('modal-projeto');
+    } catch (err) {
+        alert(err.message);
+    }
+};
 
 async function carregarLeadsParaProjetos() {
     const selector = document.getElementById('proj-client');
@@ -297,9 +453,20 @@ async function carregarDadosTime() {
         if (!res.ok) throw new Error("Falha na busca");
         const data = await res.json();
         if (data.membros) {
+            // Pega o token para saber se quem tá vendo a tela é Admin
+            const myToken = localStorage.getItem('token_ej');
+            const myPayload = decodificarJWT(myToken);
+            const isAdmin = myPayload && myPayload.role === 'ADMIN';
+
             listBody.innerHTML = data.membros.map(m => `
                 <tr>
-                    <td><div style="display: flex; align-items: center; gap: 10px;"><div class="avatar-mini">${m.iniciais || '👤'}</div>${m.nome}</div></td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div class="avatar-mini">${m.iniciais || '👤'}</div>
+                            ${m.nome}
+                            ${isAdmin ? `<button class="btn-icon-danger" style="padding: 4px; border-radius: 4px; margin-left: auto;" onclick="abrirModalFlag(${m.id}, '${m.nome}')" title="Aplicar Bandeira"><i class="ph ph-flag"></i></button>` : ''}
+                        </div>
+                    </td>
                     <td class="dim">${m.atividade}</td>
                     <td><span class="status-badge ${m.status === 'Ativo' ? 'status-ativo' : 'status-away'}">${m.status}</span></td>
                 </tr>
@@ -313,9 +480,63 @@ async function carregarDadosTime() {
     } catch (e) { listBody.innerHTML = `<tr><td colspan="3" class="text-center" style="color:var(--danger)">API não conectada.</td></tr>`; }
 }
 
+async function carregarCheckboxesDeMembros() {
+    const container = document.getElementById('proj-members-list');
+    if (!container) return;
+    try {
+        const res = await fetchSeguro('/users/workload');
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        
+        // Blindagem: Aceita o formato com "membros" ou a Array direta do UserService
+        const listaMembros = data.membros || (Array.isArray(data) ? data : []);
+        
+        container.innerHTML = listaMembros.map(item => {
+            // Blindagem: Se vier do UserService, o dado real está dentro da chave "user"
+            const membro = item.user ? item.user : item;
+            
+            return `
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 4px;">
+                <input type="checkbox" class="member-checkbox" value="${membro.id}">
+                <span style="color: white; font-size: 14px;">${membro.name || membro.nome || 'Sem Nome'}</span>
+            </label>
+        `}).join('');
+    } catch (e) {
+        container.innerHTML = '<span style="color: var(--danger)">Falha ao carregar a lista de membros.</span>';
+    }
+}
+
 // ==========================================
 // 3. INICIALIZAÇÃO E EVENT LISTENERS DO DOM
 // ==========================================
+
+window.abrirModalFlag = function(userId, userName) {
+    document.getElementById('flag-target-id').value = userId;
+    document.getElementById('flag-target-name').innerText = userName;
+    openModal('modal-flag');
+};
+
+document.getElementById('flag-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btnSubmit = e.target.querySelector('button[type="submit"]');
+    btnSubmit.innerText = "Registrando..."; btnSubmit.disabled = true;
+
+    const targetId = document.getElementById('flag-target-id').value;
+    const payload = {
+        severity: document.getElementById('flag-severity').value,
+        reason: document.getElementById('flag-reason').value
+    };
+
+    try {
+        const res = await fetchSeguro(`/users/${targetId}/flags`, { method: 'POST', body: JSON.stringify(payload) });
+        if (!res.ok) throw new Error((await res.json()).detail || "Erro de permissão.");
+        alert("Bandeira aplicada e registrada no histórico corporativo.");
+        closeModal('modal-flag'); 
+        e.target.reset();
+    } catch (err) { alert("Falha: " + err.message); } 
+    finally { btnSubmit.innerText = "Registrar Punição"; btnSubmit.disabled = false; }
+});
+
 document.addEventListener('DOMContentLoaded', () => {
     
     const token = localStorage.getItem('token_ej');
@@ -447,25 +668,54 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('projeto-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const btnSubmit = e.target.querySelector('button[type="submit"]');
-        btnSubmit.innerText = "Criando..."; btnSubmit.disabled = true;
+        btnSubmit.innerText = "Processando..."; 
+        btnSubmit.disabled = true;
+
+        // CORREÇÃO: Captura correta da variável editId
+        const editId = document.getElementById('proj-edit-id').value;
+
+        const membrosSelecionados = Array.from(document.querySelectorAll('.member-checkbox:checked'))
+                                         .map(cb => parseInt(cb.value));
 
         const payload = {
             title: document.getElementById('proj-name').value, 
             description: document.getElementById('proj-desc').value,
             status: document.getElementById('proj-status').value,
             organization_id: parseInt(document.getElementById('proj-client').value) || null,
-            member_ids: [] 
+            member_ids: membrosSelecionados 
         };
 
         try {
-            const res = await fetchSeguro('/projects/', { method: 'POST', body: JSON.stringify(payload) });
-            if (!res.ok) throw new Error((await res.json()).detail || "Erro de Validação");
-            alert("Projeto iniciado com sucesso!");
-            closeModal('modal-projeto'); e.target.reset();
+            let res;
+            if (editId) {
+                res = await fetchSeguro(`/projects/${editId}/editar`, { method: 'PATCH', body: JSON.stringify(payload) });
+            } else {
+                res = await fetchSeguro('/projects/', { method: 'POST', body: JSON.stringify(payload) });
+            }
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                const errorMessage = Array.isArray(errorData.detail) 
+                    ? errorData.detail[0].msg 
+                    : errorData.detail || "Erro de Validação Desconhecido";
+                throw new Error(errorMessage);
+            }
+            
+            alert(editId ? "Projeto atualizado!" : "Projeto iniciado com sucesso!");
+            closeModal('modal-projeto'); 
+            
+            e.target.reset();
+            document.getElementById('proj-edit-id').value = ""; // Esvazia o ID
+            document.querySelector('#modal-projeto .modal-header h3').innerText = "Criar Novo Projeto"; // Reseta o título
+            
             carregarProjetosAcompanhamento(); 
             carregarProjetosParaDiagnostico(); 
-        } catch (error) { alert("Falha na criação: " + error.message); } 
-        finally { btnSubmit.innerText = "Salvar Projeto"; btnSubmit.disabled = false; }
+        } catch (error) { 
+            alert("Falha: " + error.message); 
+        } finally { 
+            btnSubmit.innerText = editId ? "Salvar Alterações" : "Salvar Projeto"; 
+            btnSubmit.disabled = false; 
+        }
     });
 
     document.getElementById('lead-form')?.addEventListener('submit', async (e) => {
@@ -570,19 +820,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const res = await fetchSeguro(`/projects/${projectId}/diagnostic`, { method: 'PATCH', body: JSON.stringify(payload) });
-            if (!res.ok) throw new Error((await res.json()).detail);
-            const data = await res.json();
-            const pert = data.pert_classico.metricas_globais;
-            const ccpm = data.corrente_critica.metricas_ccpm;
+            const jsonResponse = await res.json(); // Pega o payload completo
+            
+            if (!res.ok) throw new Error(jsonResponse.detail || "Erro interno na API");
+            
+            // O CONSERTO: Extraindo a chave 'dados' antes de ler a matemática
+            const dadosDiagnostico = jsonResponse.dados;
+            
+            const pert = dadosDiagnostico.pert_classico.metricas_globais;
+            const ccpm = dadosDiagnostico.corrente_critica.metricas_ccpm;
 
+            // Inserindo os dados com segurança
             document.getElementById('pert-total').innerText = `${pert.tempo_enxuto_horas} h`;
             document.getElementById('pert-safety').innerText = `${pert.margem_seguranca_horas} h`;
-            document.getElementById('critical-path-text').innerText = data.pert_classico.caminho_critico.join(' -> ');
+            document.getElementById('critical-path-text').innerText = dadosDiagnostico.pert_classico.caminho_critico.join(' -> ');
+            
             document.getElementById('ccpm-meta').innerText = `${ccpm.tempo_agressivo_projeto_horas} h`;
             document.getElementById('ccpm-buffer').innerText = `${ccpm.project_buffer_horas} h`;
             document.getElementById('buffer-status').innerText = "Protegido Matematicamente";
-        } catch (err) { alert("Cálculo Rejeitado: " + err.message); } 
-        finally { btn.innerHTML = '<i class="ph ph-calculator"></i> Calcular'; btn.disabled = false; }
+            
+        } catch (err) { 
+            alert("Cálculo Rejeitado: " + err.message); 
+        } finally { 
+            btn.innerHTML = '<i class="ph ph-calculator"></i> Calcular'; 
+            btn.disabled = false; 
+        }
     });
 
     document.getElementById('btn-download-pdf')?.addEventListener('click', async () => {
