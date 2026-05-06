@@ -37,14 +37,17 @@
                 <a href="#" class="nav-link active" data-target="acompanhamento"><i class="ph ph-chart-line"></i> Acompanhamento</a>
                 <a href="#" class="nav-link" data-target="individual"><i class="ph ph-user"></i> Individual</a>
                 <a href="#" class="nav-link" data-target="ponto"><i class="ph ph-clock"></i> Ponto</a>
+                <a href="#" class="nav-link" data-target="chat"><i class="ph ph-chat-teardrop-text"></i> Comunicação</a>
                 <a href="#" class="nav-link" data-target="leads"><i class="ph ph-users-three"></i> Leads</a>
                 
                 <div id="menu-admin" style="display: none;">
                     <p class="menu-label">Administrativo</p>
                     <a href="#" class="nav-link" data-target="psel"><i class="ph ph-identification-card"></i> Processo Seletivo</a>
+                    <a href="#" class="nav-link" data-target="usuarios"><i class="ph ph-identification-badge"></i> Gestão de Acessos</a>
                     <a href="#" class="nav-link" data-target="time"><i class="ph ph-users"></i> Visão do Time</a>
+                    <a href="#" class="nav-link" data-target="precificacao"><i class="ph ph-currency-circle-dollar"></i> Precificação</a>
                     <a href="#" class="nav-link" data-target="reembolsos"><i class="ph ph-hand-coins"></i> Reembolsos</a>
-                    <a href="#" class="nav-link" data-target="faltas"><i class="ph ph-calendar-x"></i> Faltas</a>
+                    <a href="#" class="nav-link" data-target="faltas"><i class="ph ph-scales"></i> P&C / Compliance</a>
                     <a href="#" class="nav-link" data-target="diagnostico"><i class="ph ph-math-operations"></i> Diagnóstico PERT</a>
                 </div>
                 
@@ -84,6 +87,141 @@
                             </thead>
                             <tbody id="projetos-list-body">
                                 <tr><td colspan="4" class="text-center dim">Carregando projetos do servidor...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section id="sec-precificacao" class="tab-content">
+                    <div class="header-main flex-between" style="align-items: flex-end;">
+                        <div>
+                            <h1>Calculadora de Precificação</h1>
+                            <p class="dim">Simulação orçamentária e cálculo de Markup</p>
+                        </div>
+                        <div style="display: flex; gap: 15px; align-items: center;">
+                            <div style="min-width: 200px;">
+                                <select id="preco-lead" class="dark-input" style="margin-top: 0; padding: 10px; cursor: pointer;">
+                                    <option value="">Carregando leads...</option>
+                                </select>
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <button class="btn-icon" id="btn-pdf-orcamento" title="Baixar Orçamento em PDF"><i class="ph ph-file-pdf"></i></button>
+                                <button class="btn-primary" id="btn-calcular-preco"><i class="ph ph-calculator"></i> Simular</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="dashboard-grid-1-6">
+                        <!-- Coluna Esquerda: Parâmetros e Custos -->
+                        <div style="display: flex; flex-direction: column; gap: 20px;">
+                            
+                            <div class="card" style="border-top: 4px solid var(--primary);">
+                                <h3>Parâmetros Globais da Empresa</h3>
+                                <div class="stats-grid" style="margin-top: 15px;">
+                                    <div class="input-group">
+                                        <label>Rateio Custo Fixo Sede (R$)</label>
+                                        <input type="number" id="preco-rateio" class="dark-input" value="0.00" step="0.01">
+                                    </div>
+                                    <div class="input-group">
+                                        <label>Margem de Lucro (%)</label>
+                                        <input type="number" id="preco-margem" class="dark-input" value="35" step="0.1">
+                                    </div>
+                                    <div class="input-group">
+                                        <label>Imposto (%)</label>
+                                        <input type="number" id="preco-imposto" class="dark-input" value="6" step="0.1">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Custos de Pessoal -->
+                            <div class="card table-container" style="margin-top:0">
+                                <div class="flex-between" style="margin-bottom: 15px;">
+                                    <h3>Horas de Pessoal</h3>
+                                    <button class="btn-outline-sm add-cost-btn" data-table="tb-pessoal" style="width: auto;">+ Insumo</button>
+                                </div>
+                                <table class="table">
+                                    <thead><tr><th>Cargo / Recurso</th><th>Quantidade (h)</th><th>Valor Hora (R$)</th><th></th></tr></thead>
+                                    <tbody id="tb-pessoal"></tbody>
+                                </table>
+                            </div>
+
+                            <!-- Custos Diretos -->
+                            <div class="card table-container" style="margin-top:0">
+                                <div class="flex-between" style="margin-bottom: 15px;">
+                                    <h3>Custos Diretos (Hospedagem, Passagem...)</h3>
+                                    <button class="btn-outline-sm add-cost-btn" data-table="tb-direto" style="width: auto;">+ Insumo</button>
+                                </div>
+                                <table class="table">
+                                    <thead><tr><th>Descrição</th><th>Quantidade</th><th>Valor Unitário (R$)</th><th></th></tr></thead>
+                                    <tbody id="tb-direto"></tbody>
+                                </table>
+                            </div>
+
+                            <!-- Terceirizados -->
+                            <div class="card table-container" style="margin-top:0">
+                                <div class="flex-between" style="margin-bottom: 15px;">
+                                    <h3>Custos Terceirizados (Mentoria...)</h3>
+                                    <button class="btn-outline-sm add-cost-btn" data-table="tb-terceiro" style="width: auto;">+ Insumo</button>
+                                </div>
+                                <table class="table">
+                                    <thead><tr><th>Descrição</th><th>Quantidade</th><th>Valor Unitário (R$)</th><th></th></tr></thead>
+                                    <tbody id="tb-terceiro"></tbody>
+                                </table>
+                            </div>
+
+                        </div>
+
+                        <div>
+                            <div class="card" style="border-left: 4px solid var(--success); position: sticky; top: 20px;">
+                                <h3>Resultado Comercial</h3>
+                                <p class="dim small" style="margin-bottom: 20px;">Valores calculados</p>
+                                
+                                <div class="flex-between" style="margin-bottom: 15px;">
+                                    <span class="dim">Custo Direto Total:</span>
+                                    <strong id="res-custo" style="font-family: monospace; font-size: 16px;">R$ 0,00</strong>
+                                </div>
+                                <div class="flex-between" style="margin-bottom: 15px;">
+                                    <span class="dim">Impostos Retidos:</span>
+                                    <strong id="res-imposto" style="font-family: monospace; font-size: 16px; color: var(--warning);">R$ 0,00</strong>
+                                </div>
+                                <div class="flex-between" style="margin-bottom: 15px;">
+                                    <span class="dim">Lucro Líquido Projetado:</span>
+                                    <strong id="res-lucro" style="font-family: monospace; font-size: 16px; color: var(--primary);">R$ 0,00</strong>
+                                </div>
+                                
+                                <hr style="border: 0; border-top: 1px dashed var(--border); margin: 20px 0;">
+                                
+                                <div class="flex-between">
+                                    <span class="dim">Preço Final de Venda:</span>
+                                    <strong id="res-venda" style="font-family: monospace; font-size: 26px; color: var(--success);">R$ 0,00</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="sec-usuarios" class="tab-content">
+                    <div class="header-main flex-between">
+                        <div>
+                            <h1>Gestão de Acessos</h1>
+                            <p class="dim">Controle de membros, cargos e credenciais da EJ Unicap</p>
+                        </div>
+                        <button class="btn-primary" onclick="prepararNovoUsuario()" style="width:auto;">
+                            <i class="ph ph-user-plus"></i> Novo Membro
+                        </button>
+                    </div>
+                    <div class="card table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>E-mail Corporativo</th>
+                                    <th>Nível de Acesso (Role)</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usuarios-list-body">
+                                <tr><td colspan="5" class="text-center dim">Carregando membros...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -188,8 +326,19 @@
                             <h1>Visão Individual</h1>
                             <p class="dim">Gestão das suas tarefas ativas e registro de ponto</p>
                         </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn-outline-sm" onclick="openModal('modal-senha')" style="width: auto;">
+                                <i class="ph ph-lock-key"></i> Mudar Senha
+                            </button>
+                            <button class="btn-outline-sm" onclick="openModal('modal-falta')" style="width: auto; border-color: var(--danger); color: var(--danger);">
+                                <i class="ph ph-calendar-plus"></i> Justificar Falta
+                            </button>
+                        </div>
                     </div>
+                    
                     <div class="dashboard-grid-1-6">
+                        
+                        <!-- COLUNA ESQUERDA (Tarefas) -->
                         <div class="card table-container" style="margin-top: 0;">
                             <div class="card-header">
                                 <h3>Minhas Tarefas</h3>
@@ -209,29 +358,45 @@
                                 </tbody>
                             </table>
                         </div>
-                        <div class="card" style="text-align: center; border-top: 4px solid var(--primary);">
-                            <h3>Ponto Eletrônico</h3>
-                            <p class="dim small" style="margin-bottom: 20px;">Meta semanal da EJ: 20h</p>
-                            <div style="font-size: 42px; font-weight: bold; font-family: monospace; color: var(--text-main); margin: 20px 0;" id="relogio-local">
-                                00:00:00
-                            </div>
-                            <!-- O NOVO VELOCÍMETRO DE TURNO -->
-                            <div id="turno-container" style="display: none; margin-bottom: 20px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
-                                <span class="dim small" style="text-transform: uppercase; letter-spacing: 1px;">Tempo de Turno Atual</span><br>
-                                <strong id="turno-timer" style="font-size: 28px; font-family: monospace; transition: all 0.3s; color: var(--success);">00:00:00</strong>
-                            </div>
-                            <button class="btn-primary" id="btn-bater-ponto" style="margin-bottom: 20px; font-size: 16px;">
-                                <i class="ph ph-fingerprint"></i> Registrar Entrada / Saída
-                            </button>
-                            <div style="text-align: left; background: var(--input-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
-                                <div class="flex-between" style="margin-bottom: 8px;">
-                                    <span class="dim small">Progresso Semanal</span>
-                                    <strong id="horas-feitas-text" style="color: var(--success);">0h / 20h</strong>
+
+                        <!-- COLUNA DIREITA (Agrupamento do Ponto e Avisos) -->
+                        <div style="display: flex; flex-direction: column; gap: 20px;">
+                            
+                            <!-- 1. PONTO ELETRÔNICO VEM PRIMEIRO -->
+                            <div class="card" style="text-align: center; border-top: 4px solid var(--primary); margin-top: 0;">
+                                <h3>Ponto Eletrônico</h3>
+                                <p class="dim small" style="margin-bottom: 20px;">Meta semanal da EJ: 20h</p>
+                                <div style="font-size: 42px; font-weight: bold; font-family: monospace; color: var(--text-main); margin: 20px 0;" id="relogio-local">
+                                    00:00:00
                                 </div>
-                                <div class="progress-bar">
-                                    <div class="progress-fill" id="ponto-progress-bar" style="width: 0%; background: var(--success);"></div>
+                                <div id="turno-container" style="display: none; margin-bottom: 20px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
+                                    <span class="dim small" style="text-transform: uppercase; letter-spacing: 1px;">Tempo de Turno Atual</span><br>
+                                    <strong id="turno-timer" style="font-size: 28px; font-family: monospace; transition: all 0.3s; color: var(--success);">00:00:00</strong>
+                                </div>
+                                <button class="btn-primary" id="btn-bater-ponto" style="margin-bottom: 20px; font-size: 16px;">
+                                    <i class="ph ph-fingerprint"></i> Registrar Entrada / Saída
+                                </button>
+                                <div style="text-align: left; background: var(--input-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
+                                    <div class="flex-between" style="margin-bottom: 8px;">
+                                        <span class="dim small">Progresso Semanal</span>
+                                        <strong id="horas-feitas-text" style="color: var(--success);">0h / 20h</strong>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" id="ponto-progress-bar" style="width: 0%; background: var(--success);"></div>
+                                    </div>
                                 </div>
                             </div>
+
+                            <!-- 2. AVISOS VÊM DEPOIS -->
+                            <div class="card" style="border-top: 4px solid var(--danger); display: none; margin-top: 0;" id="my-flags-card">
+                                <div class="flex-between" style="margin-bottom: 15px;">
+                                    <h3 style="color: var(--danger);"><i class="ph ph-warning-circle"></i> Avisos</h3>
+                                </div>
+                                <div id="my-flags-container">
+                                    <!-- Bandeiras serão injetadas aqui -->
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                 </section>
@@ -262,24 +427,62 @@
                 <section id="sec-faltas" class="tab-content">
                     <div class="header-main flex-between">
                         <div>
-                            <h1>Gestão de Faltas</h1>
-                            <p class="dim">Controle de ausências e justificativas</p>
+                            <h1>Compliance e Histórico</h1>
+                            <p class="dim">Controle de ausências e punições disciplinares (Apenas Diretoria)</p>
                         </div>
-                        <button class="btn-primary" onclick="openModal('modal-falta')" style="width:auto;">
-                            <i class="ph ph-calendar-plus"></i> Justificar Falta
-                        </button>
                     </div>
-                    <div class="card table-container">
-                        <table class="table">
-                            <thead><tr><th>Data da Ausência</th><th>Motivo</th><th>Status</th></tr></thead>
-                            <tbody id="tabela-faltas-body">
-                                <tr><td colspan="3" class="text-center dim">Carregando histórico...</td></tr>
-                            </tbody>
-                        </table>
+                    
+                    <div class="dashboard-grid">
+                        <!-- Tabela de Faltas -->
+                        <div class="card table-container" style="margin-top:0">
+                            <h3>Ausências Reportadas</h3>
+                            <table class="table" style="margin-top: 15px;">
+                                <thead><tr><th>Membro</th><th>Data</th><th>Motivo</th><th>Status</th></tr></thead>
+                                <tbody id="tabela-todas-faltas-body">
+                                    <tr><td colspan="4" class="text-center dim">Carregando histórico...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Tabela de Bandeiras -->
+                        <div class="card table-container" style="margin-top:0; border-top: 4px solid var(--warning);">
+                            <h3>Histórico de Bandeiras</h3>
+                            <table class="table" style="margin-top: 15px;">
+                                <thead><tr><th>Punido</th><th>Severidade</th><th>Data</th><th>Ação</th></tr></thead>
+                                <tbody id="tabela-todas-flags-body">
+                                    <tr><td colspan="3" class="text-center dim">Carregando histórico...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </section>
                 
-                <section id="sec-psel" class="tab-content"><p class="dim text-center" style="margin-top: 40px;">Módulo de PSEL bloqueado para a próxima release.</p></section>
+                <section id="sec-psel" class="tab-content">
+                    <div class="header-main flex-between">
+                        <div>
+                            <h1>Processo seletivo</h1>
+                            <p class="dim">Modulo PSEL</p>
+                        </div>
+                    </div>
+                    <div class="card" style="margin-top: 40px; text-align: center; padding: 50px 20px;">
+                        <i class="ph ph-microsoft-teams" style="font-size: 48px; color: var(--primary); margin-bottom: 15px;"></i>
+                        <h3 style="margin-bottom: 10px;">Módulo em Planejamento</h3>
+                        <p class="dim">desenvolvimento de um Modulo para o processo seletivo. <strong>próximas release.</strong></p>
+                    </div>
+                </section>
+                <section id="sec-chat" class="tab-content">
+                    <div class="header-main flex-between">
+                        <div>
+                            <h1>Comunicação Integrada</h1>
+                            <p class="dim">Sincronização de mensagens e avisos</p>
+                        </div>
+                    </div>
+                    <div class="card" style="margin-top: 40px; text-align: center; padding: 50px 20px;">
+                        <i class="ph ph-microsoft-teams" style="font-size: 48px; color: var(--primary); margin-bottom: 15px;"></i>
+                        <h3 style="margin-bottom: 10px;">Módulo em Planejamento</h3>
+                        <p class="dim">desenvolvimento de um chat interno próprio. Esta seção será utilizada como chat("Telegram") interno, para comunicação oficial. <strong>próxima release.</strong></p>
+                    </div>
+                </section>
 
             </div>
         </main>
@@ -368,7 +571,7 @@
                 <div class="input-group"><label>Descrição</label><textarea id="ref-description" class="dark-input"></textarea></div>
                 <div class="stats-grid">
                     <div class="input-group"><label>Valor (R$)</label><input type="number" step="0.01" id="ref-value" class="dark-input" required></div>
-                    <div class="input-group"><label>Categoria</label><select id="categoria" name="categoria" class="dark-input">
+                    <div class="input-group"><label>Categoria</label><select id="ref-category" name="categoria" class="dark-input">
                         <option value="ALIMENTACAO">Alimentação</option>
                         <option value="TRANSPORTE">Transporte</option>
                         <option value="COMBUSTIVEL">COMBUSTIVEL</option>
@@ -413,6 +616,149 @@
                 <div class="flex-between" style="justify-content: flex-end; gap: 10px; margin-top: 20px;">
                     <button type="button" class="btn-icon" onclick="closeModal('modal-flag')" style="width: auto; padding: 0 15px;">Cancelar</button>
                     <button type="submit" class="btn-primary" style="width: auto; background: var(--danger);">Registrar Punição</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal usuarios -->
+    <div id="modal-usuario" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-usuario-title">Cadastrar Novo Membro</h3>
+                <button class="close-btn" onclick="closeModal('modal-usuario')">&times;</button>
+            </div>
+            <form id="usuario-form">
+                <input type="hidden" id="user-edit-id" value="">
+                <div class="input-group">
+                    <label>Nome Completo</label>
+                    <input type="text" id="user-name" class="dark-input" required>
+                </div>
+                <div class="input-group">
+                    <label>E-mail Corporativo</label>
+                    <input type="email" id="user-email-input" class="dark-input" required>
+                </div>
+                <div class="input-group" id="user-password-group">
+                    <label>Senha Provisória</label>
+                    <input type="password" id="user-password-input" class="dark-input">
+                    <span class="dim small">O membro deve alterar a senha no primeiro acesso.</span>
+                </div>
+                <div class="input-group">
+                    <label>Nível de Acesso (Role)</label>
+                    <select id="user-role" class="dark-input" required>
+                        <option value="CONSULTANT">Consultor (Padrão)</option>
+                        <option value="MANAGER">Gerente / Coordenador</option>
+                        <option value="PC">People & Culture (RH)</option>
+                        <option value="ADMIN">Administrador / Diretor</option>
+                    </select>
+                </div>
+                <div class="flex-between" style="justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                    <button type="button" class="btn-icon" onclick="closeModal('modal-usuario')" style="width: auto; padding: 0 15px;">Cancelar</button>
+                    <button type="submit" class="btn-primary" style="width: auto;">Salvar Membro</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-falta" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Justificar Ausência</h3>
+                <button class="close-btn" onclick="closeModal('modal-falta')">&times;</button>
+            </div>
+            <form id="falta-form">
+                <div class="input-group">
+                    <label>Data da Ausência</label>
+                    <input type="date" id="falta-data" class="dark-input" required>
+                </div>
+                <div class="input-group">
+                    <label>Motivo Detalhado</label>
+                    <textarea id="falta-motivo" class="dark-input" rows="4" required placeholder="Explique o motivo da sua ausência para análise do P&C..."></textarea>
+                </div>
+                <div class="flex-between" style="justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                    <button type="button" class="btn-icon" onclick="closeModal('modal-falta')" style="width: auto; padding: 0 15px;">Cancelar</button>
+                    <button type="submit" class="btn-primary" style="width: auto;">Enviar para Análise</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Troca de Cargo -->
+    <div id="modal-cargo" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Passagem de Bastão</h3>
+                <button class="close-btn" onclick="closeModal('modal-cargo')">&times;</button>
+            </div>
+            <form id="cargo-form">
+                <input type="hidden" id="cargo-target-id">
+                <p class="dim" style="margin-bottom: 20px;">Alterando nível de acesso de: <strong id="cargo-target-name" style="color: white;">---</strong></p>
+                <div class="input-group">
+                    <label>Novo Cargo (Role)</label>
+                    <select id="cargo-novo" class="dark-input" required>
+                        <option value="CONSULTANT">Consultor (Padrão)</option>
+                        <option value="MANAGER">Gerente / Coordenador</option>
+                        <option value="PC">People & Culture (RH)</option>
+                        <option value="ADMIN">Administrador / Diretor</option>
+                    </select>
+                </div>
+                <div class="flex-between" style="justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                    <button type="button" class="btn-icon" onclick="closeModal('modal-cargo')" style="width: auto; padding: 0 15px;">Cancelar</button>
+                    <button type="submit" class="btn-primary" style="width: auto; background: var(--warning); color: black;">Confirmar Alteração</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-delegacao-rapida" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Atribuição Direta</h3>
+                <button class="close-btn" onclick="closeModal('modal-delegacao-rapida')">&times;</button>
+            </div>
+            <form id="delegacao-rapida-form">
+                <input type="hidden" id="delegacao-assignee-id">
+                <p class="dim" style="margin-bottom: 20px;">Delegando tarefa para: <strong id="delegacao-assignee-name" style="color: white;">---</strong></p>
+                
+                <div class="input-group">
+                    <label>Título da Tarefa</label>
+                    <input type="text" id="delegacao-tarefa-titulo" class="dark-input" required placeholder="Ex: Atualizar planilhas financeiras">
+                </div>
+                
+                <div class="input-group">
+                    <label>Vincular a qual Projeto / Frente?</label>
+                    <select id="delegacao-projeto-id" class="dark-input" required>
+                        <option value="">Carregando projetos ativos...</option>
+                    </select>
+                    <span class="dim small" style="margin-top: 5px; display: block;">Dica: Crie um projeto "Gestão Interna" para tarefas avulsas.</span>
+                </div>
+
+                <div class="flex-between" style="justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                    <button type="button" class="btn-icon" onclick="closeModal('modal-delegacao-rapida')" style="width: auto; padding: 0 15px;">Cancelar</button>
+                    <button type="submit" class="btn-primary" style="width: auto;"><i class="ph ph-paper-plane-tilt"></i> Atribuir Tarefa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-senha" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Alterar Senha de Acesso</h3>
+                <button class="close-btn" onclick="closeModal('modal-senha')">&times;</button>
+            </div>
+            <form id="senha-form">
+                <div class="input-group">
+                    <label>Senha Atual</label>
+                    <input type="password" id="senha-antiga" class="dark-input" required placeholder="Confirme sua identidade">
+                </div>
+                <div class="input-group">
+                    <label>Nova Senha</label>
+                    <input type="password" id="senha-nova" class="dark-input" required placeholder="No mínimo 6 caracteres">
+                </div>
+                <div class="flex-between" style="justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                    <button type="button" class="btn-icon" onclick="closeModal('modal-senha')" style="width: auto; padding: 0 15px;">Cancelar</button>
+                    <button type="submit" class="btn-primary" style="width: auto;"><i class="ph ph-lock-key"></i> Atualizar Credencial</button>
                 </div>
             </form>
         </div>

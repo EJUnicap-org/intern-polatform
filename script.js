@@ -15,23 +15,39 @@ function decodificarJWT(token) {
     }
 }
 
-function entrarNoSistema() {
+async function entrarNoSistema() {
     const login = document.getElementById('login-container');
     const dash = document.getElementById('main-dashboard');
-    if (login) login.style.display = 'none';
-    if (dash) dash.style.display = 'flex';
 
-    // RBAC: Controle de Acesso Visual
-    const token = localStorage.getItem('token_ej');
-    const payload = decodificarJWT(token);
-    const menuAdmin = document.getElementById('menu-admin');
-    
-    if (menuAdmin) {
-        if (payload && payload.role === 'ADMIN') {
-            menuAdmin.style.display = 'block';
-        } else {
-            menuAdmin.style.display = 'none';
+    try {
+        const res = await fetchSeguro('/auth/me');
+        if (!res.ok) throw new Error("Sessão expirada ou token revogado.");
+        
+        const userData = await res.json();
+
+        const token = localStorage.getItem('token_ej');
+        const payload = decodificarJWT(token);
+        const userRoleReal = userData.role || (payload ? payload.role : 'CONSULTANT');
+
+        localStorage.setItem('userId', userData.id);
+        localStorage.setItem('userRole', userRoleReal);
+
+        if (login) login.style.display = 'none';
+        if (dash) dash.style.display = 'flex';
+
+        const menuAdmin = document.getElementById('menu-admin');
+        if (menuAdmin) {
+            if (userRoleReal === 'ADMIN' || userRoleReal === 'MANAGER' || userRoleReal === 'PC') {
+                menuAdmin.style.display = 'block';
+            } else {
+                menuAdmin.style.display = 'none';
+            }
         }
+    } catch (err) {
+        localStorage.removeItem('token_ej');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('userRole');
+        exibirLogin();
     }
 }
 
@@ -128,6 +144,36 @@ async function carregarVisaoIndividual() {
                 `;
             }).join('');
         }
+
+        try {
+            const resFlags = await fetchSeguro('/users/me/flags');
+            if (resFlags.ok) {
+                const flags = await resFlags.json();
+                const flagsCard = document.getElementById('my-flags-card');
+                const flagsContainer = document.getElementById('my-flags-container');
+        
+                if (flags.length > 0 && flagsCard && flagsContainer) {
+                    flagsCard.style.display = 'block';
+                    flagsContainer.innerHTML = flags.map(f => {
+                    const isFormal = f.severity === 'FORMAL';
+                    const cor = isFormal ? 'var(--danger)' : 'var(--warning)';
+                    return `
+                        <div style="background: rgba(0,0,0,0.2); padding: 12px; border-left: 3px solid ${cor}; border-radius: 4px; margin-bottom: 10px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <strong style="color: ${cor}; font-size: 13px;">${f.severity}</strong>
+                            <span class="dim small">${new Date(f.created_at).toLocaleDateString('pt-BR')}</span>
+                        </div>
+                        <p style="font-size: 14px; margin: 0;">${f.reason}</p>
+                        </div>
+                    `;
+                }).join('');
+                } else if (flagsCard) {
+                flagsCard.style.display = 'none'; // Esconde se for um membro comportado
+            }
+            }
+        } catch (e) {
+            console.error("Erro ao carregar bandeiras pessoais:", e);
+        }   
 
         const horasFeitas = parseFloat(usuario.horas_semanais) || 0;
         const meta = 20; 
@@ -232,6 +278,135 @@ async function carregarProjetosAcompanhamento() {
             </tr>
         `).join('');
     } catch (err) { listBody.innerHTML = `<tr><td colspan="4" class="text-center" style="color:var(--danger)">${err.message}</td></tr>`; }
+}
+
+async function carregarLeadsParaPrecificacao() {
+    const selector = document.getElementById('preco-lead');
+    if (!selector) return;
+    
+    selector.innerHTML = '<option value="">Buscando organizações do banco...</option>';
+    
+    try {
+        const res = await fetchSeguro('/organizations/leads');
+        if (!res.ok) throw new Error("Erro na comunicação com a API");
+        
+        const leads = await res.json();
+        
+        if (leads.length === 0) {
+            selector.innerHTML = '<option value="" disabled selected>Nenhum lead/cliente encontrado.</option>';
+            return;
+        }
+        
+        selector.innerHTML = '<option value="" disabled selected>-- Selecione o Lead/Cliente --</option>' + 
+            leads.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+            
+    } catch (err) { 
+        selector.innerHTML = '<option value="" disabled>Erro ao carregar organizações</option>'; 
+    }
+}
+
+async function carregarComplianceAdmin() {
+    const tbodyFlags = document.getElementById('tabela-todas-flags-body');
+    if (!tbodyFlags) return;
+    
+    try {
+        const res = await fetchSeguro('/users/all'); 
+        if (!res.ok) throw new Error("Acesso negado.");
+        const flags = await res.json();
+        
+        if (flags.length === 0) {
+            tbodyFlags.innerHTML = '<tr><td colspan="3" class="text-center dim">Nenhuma punição registrada na EJ.</td></tr>';
+            return;
+        }
+
+        tbodyFlags.innerHTML = flags.map(f => {
+            const nomeMembro = f.user ? f.user.name || f.user.nome : `ID: ${f.user_id}`;
+            const isFormal = f.severity === 'FORMAL';
+            const statusClass = isFormal ? 'status-rejected' : 'status-pending';
+            
+            return `
+                <tr title="Motivo: ${f.reason}">
+                    <td><strong>${nomeMembro}</strong></td>
+                    <td><span class="status-badge ${statusClass}">${f.severity}</span></td>
+                    <td class="dim small">${new Date(f.created_at).toLocaleDateString('pt-BR')}</td>
+                    <td>
+                        <button class="btn-icon-danger" onclick="revogarBandeira(${f.id})" title="Revogar Punição">
+                            <i class="ph ph-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+        
+    } catch (err) {
+        tbodyFlags.innerHTML = `<tr><td colspan="3" class="text-center" style="color:var(--danger)">Erro: ${err.message}</td></tr>`;
+    }
+}
+
+async function carregarTodasFaltasAdmin() {
+    const tbodyFaltas = document.getElementById('tabela-todas-faltas-body');
+    if (!tbodyFaltas) return;
+
+    try {
+        const res = await fetchSeguro('/absences/all'); // A rota global que acabamos de fazer
+        if (!res.ok) throw new Error("Acesso negado.");
+        const faltas = await res.json();
+        
+        if (faltas.length === 0) {
+            tbodyFaltas.innerHTML = '<tr><td colspan="4" class="text-center dim">Nenhuma ausência reportada na empresa.</td></tr>';
+            return;
+        }
+
+        tbodyFaltas.innerHTML = faltas.map(f => {
+            const nomeMembro = f.user ? (f.user.name || f.user.nome) : `ID: ${f.user_id}`;
+            const dataCorrigida = new Date(f.absence_date + 'T12:00:00').toLocaleDateString('pt-BR');
+            const statusClass = f.status === 'APROVADA' ? 'status-approved' : 
+                               (f.status === 'REJEITADA' ? 'status-rejected' : 'status-pending');
+            
+            return `
+                <tr title="Motivo: ${f.reason}">
+                    <td><strong>${nomeMembro}</strong></td>
+                    <td class="dim small">${dataCorrigida}</td>
+                    <td class="dim">${f.reason.substring(0, 30)}...</td>
+                    <td><span class="status-badge ${statusClass}">${f.status}</span></td>
+                </tr>
+            `;
+        }).join('');
+        
+    } catch (err) {
+        tbodyFaltas.innerHTML = `<tr><td colspan="4" class="text-center" style="color:var(--danger)">Erro: ${err.message}</td></tr>`;
+    }
+}
+
+async function carregarFaltas() {
+    const tbody = document.getElementById('tabela-faltas-body');
+    if (!tbody) return;
+    
+    try {
+        const res = await fetchSeguro('/absences/');
+        if (!res.ok) throw new Error("Falha ao buscar o histórico.");
+        const faltas = await res.json();
+        
+        if (faltas.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center dim">Nenhum registro de falta no histórico.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = faltas.map(f => {
+            // Corrige o fuso horário para a data não voltar 1 dia
+            const dataCorrigida = new Date(f.absence_date + 'T12:00:00').toLocaleDateString('pt-BR');
+            return `
+                <tr>
+                    <td><strong>${dataCorrigida}</strong></td>
+                    <td class="dim">${f.reason}</td>
+                    <td><span class="status-badge status-${f.status.toLowerCase()}">${f.status}</span></td>
+                </tr>
+            `;
+        }).join('');
+        
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="3" class="text-center" style="color:var(--danger)">Erro: ${err.message}</td></tr>`;
+    }
 }
 
 window.prepararNovoProjeto = async function() {
@@ -448,37 +623,243 @@ async function carregarDadosTime() {
     const listBody = document.getElementById('team-status-list');
     if (!listBody) return;
     listBody.innerHTML = '<tr><td colspan="3" class="text-center dim">Sincronizando time...</td></tr>';
+    
     try {
         const res = await fetchSeguro('/users/workload');
         if (!res.ok) throw new Error("Falha na busca");
         const data = await res.json();
-        if (data.membros) {
-            // Pega o token para saber se quem tá vendo a tela é Admin
+        const listaMembros = Array.isArray(data) ? data : (data.membros || []);
+        
+        if (listaMembros.length > 0) {
             const myToken = localStorage.getItem('token_ej');
             const myPayload = decodificarJWT(myToken);
             const isAdmin = myPayload && myPayload.role === 'ADMIN';
 
-            listBody.innerHTML = data.membros.map(m => `
+            listBody.innerHTML = listaMembros.map(m => {
+                const usuarioLogado = m.user || m; 
+                const nome = usuarioLogado.name || usuarioLogado.nome || 'Sem Nome';
+                const iniciais = nome.substring(0, 2).toUpperCase();
+                
+                const projetosAtivos = m.active_projects_count || 0;
+                const atividade = projetosAtivos > 0 ? `${projetosAtivos} Projeto(s) Ativo(s)` : 'Livre / Disponível';
+                const statusColor = projetosAtivos > 0 ? 'status-ativo' : 'status-away';
+                const statusLabel = projetosAtivos > 0 ? 'ALOCADO' : 'LIVRE';
+
+                return `
                 <tr>
                     <td>
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <div class="avatar-mini">${m.iniciais || '👤'}</div>
-                            ${m.nome}
-                            ${isAdmin ? `<button class="btn-icon-danger" style="padding: 4px; border-radius: 4px; margin-left: auto;" onclick="abrirModalFlag(${m.id}, '${m.nome}')" title="Aplicar Bandeira"><i class="ph ph-flag"></i></button>` : ''}
+                            <div class="avatar-mini">${iniciais}</div>
+                            ${nome}
+                            ${isAdmin ? `<button class="btn-icon-danger" style="padding: 4px; border-radius: 4px; margin-left: auto;" onclick="abrirModalFlag(${usuarioLogado.id}, '${nome}')" title="Aplicar Bandeira"><i class="ph ph-flag"></i></button>` : ''}
                         </div>
                     </td>
-                    <td class="dim">${m.atividade}</td>
-                    <td><span class="status-badge ${m.status === 'Ativo' ? 'status-ativo' : 'status-away'}">${m.status}</span></td>
+                    <td class="dim">${atividade}</td>
+                    <td><span class="status-badge ${statusColor}">${statusLabel}</span></td>
                 </tr>
-            `).join('');
+                `;
+            }).join('');
+        } else {
+            listBody.innerHTML = '<tr><td colspan="3" class="text-center dim">Nenhum membro ativo retornado.</td></tr>';
         }
-        const chart = document.getElementById('team-occupancy-chart');
-        if (chart && data.porcentagem_geral !== undefined) {
-            chart.style.background = `conic-gradient(var(--primary) ${data.porcentagem_geral}%, var(--bg-card) 0deg)`;
-            document.getElementById('occupancy-percent').innerText = `${data.porcentagem_geral}%`;
+
+        if (listaMembros.length > 0) {
+            const myToken = localStorage.getItem('token_ej');
+            const myPayload = decodificarJWT(myToken);
+            const isAdmin = myPayload && myPayload.role === 'ADMIN';
+            listBody.innerHTML = listaMembros.map(m => {
+                const usuarioLogado = m.user || m; 
+                const nome = usuarioLogado.name || usuarioLogado.nome || 'Sem Nome';
+                const iniciais = nome.substring(0, 2).toUpperCase();
+                
+                const projetosAtivos = m.active_projects_count || 0;
+                const atividade = projetosAtivos > 0 ? `${projetosAtivos} Projeto(s) Ativo(s)` : 'Livre / Disponível';
+                const statusColor = projetosAtivos > 0 ? 'status-ativo' : 'status-away';
+                const statusLabel = projetosAtivos > 0 ? 'ALOCADO' : 'LIVRE';
+
+                return `
+                <tr>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div class="avatar-mini">${iniciais}</div>
+                            ${nome}
+                            ${isAdmin ? `
+                                <div style="display: flex; gap: 5px; margin-left: auto;">
+                                    <button class="btn-outline-sm" style="padding: 4px; border-radius: 4px;" onclick="abrirModalDelegacaoRapida(${usuarioLogado.id}, '${nome}')" title="Atribuição Rápida">
+                                        <i class="ph ph-clipboard-text"></i>
+                                    </button>
+                                    <button class="btn-icon-danger" style="padding: 4px; border-radius: 4px;" onclick="abrirModalFlag(${usuarioLogado.id}, '${nome}')" title="Aplicar Bandeira">
+                                        <i class="ph ph-flag"></i>
+                                    </button>
+                                </div>` : ''
+                            }
+                        </div>
+                    </td>
+                    <td class="dim">${atividade}</td>
+                    <td><span class="status-badge ${statusColor}">${statusLabel}</span></td>
+                </tr>
+                `;
+            }).join('');
+            const totalMembros = listaMembros.length;
+            const membrosAlocados = listaMembros.filter(m => (m.active_projects_count || 0) > 0).length;
+            const porcentagemGeral = Math.round((membrosAlocados / totalMembros) * 100);
+
+            const chart = document.getElementById('team-occupancy-chart');
+            const percentDisplay = document.getElementById('occupancy-percent');
+            
+            if (chart && percentDisplay) {
+                let corGrafico = 'var(--success)';
+                if (porcentagemGeral >= 50) corGrafico = 'var(--warning)';
+                if (porcentagemGeral >= 80) corGrafico = 'var(--danger)';
+
+                chart.style.background = `conic-gradient(${corGrafico} ${porcentagemGeral}%, var(--bg-card) 0deg)`;
+                percentDisplay.innerText = `${porcentagemGeral}%`;
+            }
+
+        } else {
+            listBody.innerHTML = '<tr><td colspan="3" class="text-center dim">Nenhum membro ativo retornado.</td></tr>';
+            const chart = document.getElementById('team-occupancy-chart');
+            if (chart) {
+                chart.style.background = `conic-gradient(var(--primary) 0%, var(--bg-card) 0deg)`;
+                document.getElementById('occupancy-percent').innerText = `0%`;
+            }
         }
-    } catch (e) { listBody.innerHTML = `<tr><td colspan="3" class="text-center" style="color:var(--danger)">API não conectada.</td></tr>`; }
+
+    } catch (e) { 
+        listBody.innerHTML = `<tr><td colspan="3" class="text-center" style="color:var(--danger)">Erro de Processamento: ${e.message}</td></tr>`; 
+    }
 }
+
+async function carregarUsuariosAdmin() {
+    const tbody = document.getElementById('usuarios-list-body');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center dim">Sincronizando banco de dados...</td></tr>';
+
+    try {
+        const res = await fetchSeguro('/users/');
+        if (!res.ok) throw new Error("Acesso negado ou erro no servidor.");
+        const usuarios = await res.json();
+
+        if (usuarios.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center dim">Nenhum membro encontrado.</td></tr>';
+            return;
+        }
+
+        const roleMap = {
+            'ADMIN': 'Administrador',
+            'MANAGER': 'Gerente / Coordenador',
+            'PC': 'People & Culture',
+            'CONSULTANT': 'Consultor'
+        };
+
+        const currentUserId = parseInt(localStorage.getItem('userId')) || 0; 
+
+        tbody.innerHTML = usuarios.map(u => {
+            const badgeLabel = roleMap[u.role] || u.role;
+            const nomeFormatado = u.name || u.nome || 'Sem Nome';
+            
+            // O BOTÃO DA PASSAGEM DE BASTÃO NASCE AQUI
+            const btnPassarBastao = (u.id === currentUserId) 
+                ? '' 
+                : `<button class="btn-outline-sm" onclick="abrirModalCargo(${u.id}, '${nomeFormatado}', '${u.role}')" title="Alterar Nível de Acesso" style="padding: 6px; margin-right: 5px;"><i class="ph ph-swap"></i> Cargo</button>`;
+
+            const deleteButton = (u.id === currentUserId) 
+                ? `<span class="dim small" style="margin-top: 5px;">Você</span>` 
+                : `<button class="btn-icon-danger" onclick="deletarUsuario(${u.id}, '${u.email}')" title="Revogar Acesso"><i class="ph ph-trash"></i></button>`;
+
+            return `
+            <tr>
+                <td><strong>${nomeFormatado}</strong></td>
+                <td class="dim">${u.email}</td>
+                <td><span class="badge" style="border-color: var(--primary); color: var(--primary);">${badgeLabel}</span></td>
+                <td><span class="status-badge status-ativo">ATIVO</span></td>
+                <td>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        ${btnPassarBastao}
+                        ${deleteButton}
+                    </div>
+                </td>
+            </tr>
+            `;
+        }).join('');
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center" style="color:var(--danger)">Erro: ${err.message}</td></tr>`;
+    }
+}
+
+    window.prepararNovoUsuario = function() {
+        document.getElementById('usuario-form').reset();
+        document.getElementById('user-edit-id').value = "";
+        
+        // Exige senha na criação
+        document.getElementById('user-password-input').required = true;
+        document.getElementById('user-password-group').style.display = 'flex';
+        
+        document.getElementById('modal-usuario-title').innerText = "Cadastrar Novo Membro";
+        openModal('modal-usuario');
+    };
+
+    window.deletarUsuario = async function(userId, userEmail) {
+        if (!confirm(`TOLERÂNCIA ZERO: Você está prestes a DELETAR a conta de ${userEmail}. Isso pode corromper tarefas vinculadas a ele. Confirma a exclusão física?`)) {
+            return;
+        }
+
+        try {
+            const res = await fetchSeguro(`/users/${userId}`, { method: 'DELETE' });
+            if (!res.ok) {
+                const erro = await res.json();
+                throw new Error(erro.detail || "Erro ao deletar o usuário no banco.");
+            }
+            alert("Membro ejetado do sistema com sucesso.");
+            carregarUsuariosAdmin();
+        } catch (err) {
+            alert("Falha Crítica: " + err.message);
+        }
+    };
+
+    // Listener do Formulário de Criação
+    document.getElementById('usuario-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btnSubmit = e.target.querySelector('button[type="submit"]');
+        btnSubmit.innerText = "Provisionando..."; 
+        btnSubmit.disabled = true;
+
+        const payload = {
+            name: document.getElementById('user-name').value.trim(),
+            email: document.getElementById('user-email-input').value.trim(),
+            password: document.getElementById('user-password-input').value,
+            role: document.getElementById('user-role').value
+        };
+
+        try {
+            const res = await fetchSeguro('/users/', {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                // Tratamento específico para o Array de Erros 422 do FastAPI
+                let erroMsg = "Falha de validação.";
+                if (errorData.detail && Array.isArray(errorData.detail)) {
+                    erroMsg = errorData.detail.map(err => `${err.loc.join('->')}: ${err.msg}`).join('\n');
+                } else if (errorData.detail) {
+                    erroMsg = errorData.detail;
+                }
+                throw new Error(erroMsg);
+            }
+
+            alert("Credencial criada com sucesso! O membro já pode fazer login.");
+            closeModal('modal-usuario');
+            carregarUsuariosAdmin();
+
+        } catch (err) {
+            alert("Erro de API: \n" + err.message);
+        } finally {
+            btnSubmit.innerText = "Salvar Membro";
+            btnSubmit.disabled = false;
+        }
+    });
 
 async function carregarCheckboxesDeMembros() {
     const container = document.getElementById('proj-members-list');
@@ -551,7 +932,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const emailDigitado = document.getElementById('user-email').value;
             const senhaDigitada = document.getElementById('user-pass').value;
 
-            btn.innerText = "Autenticando..."; btn.disabled = true;
+            btn.innerText = "Autenticando..."; 
+            btn.disabled = true;
             if(errorMsg) errorMsg.style.display = 'none';
 
             const corpo = new URLSearchParams();
@@ -560,37 +942,179 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 const res = await fetch(`${API_BASE_URL}/auth/login`, { 
-                    method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: corpo
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, 
+                    body: corpo
                 });
+                
                 const dados = await res.json();
+                
                 if (res.ok && dados.access_token) {
                     localStorage.setItem('token_ej', dados.access_token);
-                    entrarNoSistema();
+                    await entrarNoSistema();
                 } else {
                     if(errorMsg) errorMsg.style.display = 'block';
                 }
             } catch (err) {
-                alert("Erro ao conectar com a API.");
-            } finally { btn.innerText = "Acessar Sistema"; btn.disabled = false; }
+                console.error("FALHA CRÍTICA DE REDE:", err);
+                alert("Erro de comunicação com o servidor: " + err.message);
+            } finally {
+                btn.innerText = "Acessar Sistema"; 
+                btn.disabled = false; 
+            }
         });
     }
+
+    function extrairInsumosDaTabela(tableId) {
+        const insumos = [];
+        document.querySelectorAll(`#${tableId} tr`).forEach(row => {
+            const inputs = row.querySelectorAll('input');
+            const nome = inputs[0].value.trim();
+            const qtd = parseFloat(inputs[1].value) || 0;
+            const valor = parseFloat(inputs[2].value) || 0;
+            
+            if (nome && qtd > 0) {
+                insumos.push({ title: nome, quantity: qtd, unit_value: valor });
+            }
+        });
+        return insumos;
+    }
+
+    document.querySelectorAll('.add-cost-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const tableId = btn.getAttribute('data-table');
+            const tbody = document.getElementById(tableId);
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><input type="text" class="dark-input" placeholder="Ex: Consultor Sênior"></td>
+                <td><input type="number" class="dark-input sm" placeholder="0" step="0.5" style="width: 80px;"></td>
+                <td><input type="number" class="dark-input sm" placeholder="0.00" step="0.01" style="width: 100px;"></td>
+                <td><button type="button" class="btn-icon-danger" onclick="this.parentElement.parentElement.remove()"><i class="ph ph-trash"></i></button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    });
+
+    document.getElementById('btn-pdf-orcamento')?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    const btn = e.currentTarget;
+    const leadId = document.getElementById('preco-lead').value;
+
+    if (!leadId) {
+        return alert("Erro: Selecione a organização/lead no menu superior antes de gerar a proposta comercial.");
+    }
+
+    btn.innerHTML = '<i class="ph ph-spinner-gap"></i>';
+    btn.disabled = true;
+
+    // Reconstrói o payload exatamente como na simulação
+    const rateio = parseFloat(document.getElementById('preco-rateio').value) || 0;
+    const margemDecimal = (parseFloat(document.getElementById('preco-margem').value) || 0) / 100;
+    const impostoDecimal = (parseFloat(document.getElementById('preco-imposto').value) || 0) / 100;
+
+    const payload = {
+        lead_id: parseInt(leadId), // O identificador crucial para o PDF
+        fixed_cost_allocation: rateio,
+        margin_percent: margemDecimal,
+        tax_percent: impostoDecimal,
+        personnel_costs: extrairInsumosDaTabela('tb-pessoal'),
+        direct_costs: extrairInsumosDaTabela('tb-direto'),
+        outsourced_costs: extrairInsumosDaTabela('tb-terceiro')
+    };
+
+    try {
+        const res = await fetchSeguro('/pricing/export-pdf', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            const erro = await res.json();
+            throw new Error(erro.detail || "Falha na geração do documento.");
+        }
+
+        // A mágica de tratar a resposta como Binário (Blob) em vez de JSON
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        
+        a.href = url;
+        a.download = `Proposta_Comercial_${leadId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        
+        // Limpeza de memória
+        a.remove();
+        window.URL.revokeObjectURL(url);
+
+    } catch (err) {
+        alert("Falha na Exportação: " + err.message);
+    } finally {
+        btn.innerHTML = '<i class="ph ph-file-pdf"></i>';
+        btn.disabled = false;
+    }
+});
+
+    document.getElementById('btn-calcular-preco')?.addEventListener('click', async (e) => {
+        const btn = e.currentTarget;
+        btn.innerHTML = '<i class="ph ph-spinner-gap"></i> Simulando...';
+        btn.disabled = true;
+
+        const rateio = parseFloat(document.getElementById('preco-rateio').value) || 0;
+        const margemDecimal = (parseFloat(document.getElementById('preco-margem').value) || 0) / 100;
+        const impostoDecimal = (parseFloat(document.getElementById('preco-imposto').value) || 0) / 100;
+
+        const payload = {
+            fixed_cost_allocation: rateio,
+            margin_percent: margemDecimal,
+            tax_percent: impostoDecimal,
+            personnel_costs: extrairInsumosDaTabela('tb-pessoal'),
+            direct_costs: extrairInsumosDaTabela('tb-direto'),
+            outsourced_costs: extrairInsumosDaTabela('tb-terceiro')
+        };
+
+        try {
+            const res = await fetchSeguro('/pricing/calculate', {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) {
+                const erro = await res.json();
+                throw new Error(erro.detail || "Erro matemático na formatação dos dados.");
+            }
+
+            const resultado = await res.json();
+
+            const formatarMoeda = (valor) => valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+            document.getElementById('res-custo').innerText = formatarMoeda(resultado.total_direct_cost);
+            document.getElementById('res-imposto').innerText = formatarMoeda(resultado.tax_value);
+            document.getElementById('res-lucro').innerText = formatarMoeda(resultado.margin_value);
+            document.getElementById('res-venda').innerText = formatarMoeda(resultado.final_project_value);
+
+        } catch (err) {
+            alert("Falha na Precificação: " + err.message);
+        } finally {
+            btn.innerHTML = '<i class="ph ph-calculator"></i> Simular Orçamento';
+            btn.disabled = false;
+        }
+    });
 
     document.getElementById('btn-logout')?.addEventListener('click', (e) => {
         e.preventDefault(); localStorage.removeItem('token_ej'); window.location.reload(); 
     });
-    // Relógio e Motor do Velocímetro de Turno
     const relogio = document.getElementById('relogio-local');
     const turnoTimer = document.getElementById('turno-timer');
 
     setInterval(() => {
         const agora = new Date();
         
-        // Relógio normal da tela
         if (relogio) relogio.innerText = agora.toLocaleTimeString('pt-BR');
 
-        // Lógica do Velocímetro de Turno
         if (window.turnoStartTime && turnoTimer) {
-            const diffMs = agora - window.turnoStartTime; // Diferença em Milissegundos
+            const diffMs = agora - window.turnoStartTime; 
             
             const horas = Math.floor(diffMs / 3600000);
             const minutos = Math.floor((diffMs % 3600000) / 60000);
@@ -638,10 +1162,21 @@ document.addEventListener('DOMContentLoaded', () => {
             if (targetId === 'leads') carregarLeads();
             if (targetId === 'time') carregarDadosTime();
             if (targetId === 'reembolsos') carregarTabelaReembolsos();
-            if (targetId === 'diagnostico') carregarProjetosParaDiagnostico(); 
+            if (targetId === 'diagnostico') carregarProjetosParaDiagnostico();
+            if (targetId == 'faltas'){
+                carregarFaltas();
+                carregarComplianceAdmin();
+                carregarTodasFaltasAdmin();
+            }
             if (targetId === 'acompanhamento') {
                 carregarProjetosAcompanhamento();
                 carregarLeadsParaProjetos();
+            }
+            if (targetId === 'precificacao') {
+                carregarLeadsParaPrecificacao();
+            }
+            if (targetId === 'usuarios') {
+                carregarUsuariosAdmin();
             }
         });
     });
@@ -650,7 +1185,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('file-name-display').innerText = e.target.files[0]?.name || "Arraste ou clique";
     });
 
-    // --- FORMULÁRIOS DE INTEGRAÇÃO ---
 
     document.getElementById('btn-bater-ponto')?.addEventListener('click', async (e) => {
         const btn = e.currentTarget;
@@ -671,7 +1205,6 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSubmit.innerText = "Processando..."; 
         btnSubmit.disabled = true;
 
-        // CORREÇÃO: Captura correta da variável editId
         const editId = document.getElementById('proj-edit-id').value;
 
         const membrosSelecionados = Array.from(document.querySelectorAll('.member-checkbox:checked'))
@@ -824,13 +1357,11 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (!res.ok) throw new Error(jsonResponse.detail || "Erro interno na API");
             
-            // O CONSERTO: Extraindo a chave 'dados' antes de ler a matemática
             const dadosDiagnostico = jsonResponse.dados;
             
             const pert = dadosDiagnostico.pert_classico.metricas_globais;
             const ccpm = dadosDiagnostico.corrente_critica.metricas_ccpm;
 
-            // Inserindo os dados com segurança
             document.getElementById('pert-total').innerText = `${pert.tempo_enxuto_horas} h`;
             document.getElementById('pert-safety').innerText = `${pert.margem_seguranca_horas} h`;
             document.getElementById('critical-path-text').innerText = dadosDiagnostico.pert_classico.caminho_critico.join(' -> ');
@@ -858,4 +1389,194 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.appendChild(a); a.click(); a.remove();
         } catch (err) { alert("Falha na exportação: " + err.message); }
     });
+
+    document.getElementById('falta-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btnSubmit = e.target.querySelector('button[type="submit"]');
+        btnSubmit.innerText = "Enviando..."; btnSubmit.disabled = true;
+
+        const payload = {
+            absence_date: document.getElementById('falta-data').value,
+            reason: document.getElementById('falta-motivo').value
+        };
+
+        try {
+            const res = await fetchSeguro('/absences/', { 
+                method: 'POST', 
+                body: JSON.stringify(payload) 
+            });
+            if (!res.ok) throw new Error("Erro ao registrar a falta no banco de dados.");
+            
+            alert("Sua justificativa foi enviada para análise da diretoria.");
+            closeModal('modal-falta');
+            e.target.reset();
+            carregarFaltas(); 
+        } catch (err) { 
+            alert("Falha: " + err.message); 
+        } finally { 
+            btnSubmit.innerText = "Enviar Justificativa"; btnSubmit.disabled = false; 
+        }
+    });
+});
+
+window.revogarBandeira = async function(flagId) {
+    if (!confirm("Tem certeza que deseja REVOGAR esta bandeira? Esta ação apagará o registro histórico.")) return;
+
+    try {
+        const res = await fetchSeguro(`/users/flags/${flagId}`, {
+            method: 'DELETE'
+        });
+
+        if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.detail || "Erro ao revogar bandeira.");
+        }
+
+        alert("Punição revogada e apagada do sistema.");
+        carregarComplianceAdmin();
+
+    } catch (err) {
+        alert("Falha: " + err.message);
+    }
+};
+
+window.abrirModalCargo = function(id, nome, roleAtual) {
+    document.getElementById('cargo-target-id').value = id;
+    document.getElementById('cargo-target-name').innerText = nome;
+    document.getElementById('cargo-novo').value = roleAtual;
+    openModal('modal-cargo');
+};
+
+document.getElementById('cargo-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    const id = document.getElementById('cargo-target-id').value;
+    const novaRole = document.getElementById('cargo-novo').value;
+    
+    btn.disabled = true;
+    btn.innerText = "Alterando...";
+
+    try {
+        const res = await fetchSeguro(`/users/${id}/role`, {
+            method: 'PATCH',
+            body: JSON.stringify({ role: novaRole })
+        });
+        
+        if(!res.ok) {
+            const errData = await res.json();
+            throw new Error(errData.detail || "Falha ao alterar cargo.");
+        }
+        
+        closeModal('modal-cargo');
+        alert("Passagem de bastão concluída! O nível de acesso foi alterado.");
+        carregarUsuariosAdmin(); // Atualiza a tabela na mesma hora
+    } catch(err) {
+        alert("Erro Crítico: " + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "Confirmar Alteração";
+    }
+});
+
+window.abrirModalDelegacaoRapida = async function(userId, userName) {
+    document.getElementById('delegacao-assignee-id').value = userId;
+    document.getElementById('delegacao-assignee-name').innerText = userName;
+    
+    const selectProjetos = document.getElementById('delegacao-projeto-id');
+    selectProjetos.innerHTML = '<option value="">Buscando projetos...</option>';
+    
+    openModal('modal-delegacao-rapida');
+
+    try {
+        // Busca os projetos ativos para o select
+        const res = await fetchSeguro('/projects/');
+        if (!res.ok) throw new Error("Falha ao buscar projetos.");
+        const projetos = await res.json();
+        
+        if (projetos.length === 0) {
+            selectProjetos.innerHTML = '<option value="" disabled>Nenhum projeto cadastrado no sistema.</option>';
+        } else {
+            selectProjetos.innerHTML = '<option value="" disabled selected>-- Selecione um Projeto --</option>' + 
+                projetos.map(p => `<option value="${p.id}">${p.title || p.name}</option>`).join('');
+        }
+    } catch (err) {
+        selectProjetos.innerHTML = '<option value="" disabled>Erro ao carregar projetos.</option>';
+    }
+};
+
+document.getElementById('delegacao-rapida-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    const assigneeId = document.getElementById('delegacao-assignee-id').value;
+    const projectId = document.getElementById('delegacao-projeto-id').value;
+    const title = document.getElementById('delegacao-tarefa-titulo').value.trim();
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ph ph-spinner-gap"></i> Delegando...';
+
+    try {
+        const payload = {
+            title: title,
+            assigned_to_id: parseInt(assigneeId)
+        };
+
+        // Bate na rota EXATA que você já tem construída
+        const res = await fetchSeguro(`/projects/${projectId}/tasks`, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error((await res.json()).detail || "Falha ao delegar a tarefa.");
+        
+        closeModal('modal-delegacao-rapida');
+        e.target.reset();
+        alert("Tarefa atribuída com sucesso ao membro!");
+        
+        // Atualiza a visão do time para refletir a nova carga (se necessário)
+        carregarDadosTime(); 
+    } catch(err) {
+        alert("Erro: " + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ph ph-paper-plane-tilt"></i> Atribuir Tarefa';
+    }
+});
+
+document.getElementById('senha-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btnSubmit = e.target.querySelector('button[type="submit"]');
+    const senhaAntiga = document.getElementById('senha-antiga').value;
+    const senhaNova = document.getElementById('senha-nova').value;
+
+    if (senhaNova.length < 6) {
+        return alert("A nova senha deve ter no mínimo 8 caracteres.");
+    }
+
+    btnSubmit.innerText = "Criptografando..."; 
+    btnSubmit.disabled = true;
+
+    try {
+        const res = await fetchSeguro('/users/me/password', {
+            method: 'PATCH', // Ajuste para o método e URL que você usou no seu back-end
+            body: JSON.stringify({
+                old_password: senhaAntiga,
+                new_password: senhaNova
+            })
+        });
+
+        if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.detail || "Senha atual incorreta ou erro no servidor.");
+        }
+
+        alert("Senha atualizada com sucesso! Use-a no próximo login.");
+        closeModal('modal-senha');
+        e.target.reset();
+
+    } catch (err) {
+        alert("Falha de Segurança: " + err.message);
+    } finally {
+        btnSubmit.innerHTML = '<i class="ph ph-lock-key"></i> Atualizar Credencial';
+        btnSubmit.disabled = false;
+    }
 });

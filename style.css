@@ -39,7 +39,7 @@ body { background: var(--bg-main); color: var(--text-main); overflow: hidden; he
 .logo-login i { font-size: 2.2rem; }
 .login-card .dim { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 30px; }
 
-.container { display: flex; width: 100%; min-height: 100vh; }
+.container { display: flex; width: 100%; height: 100vh; overflow: hidden; }
 #main-dashboard { display: none; } /* Controlado pelo JS */
 
 .sidebar { width: 260px; background: var(--sidebar); border-right: 1px solid var(--border); padding: 20px; flex-shrink: 0; }
@@ -50,7 +50,7 @@ body { background: var(--bg-main); color: var(--text-main); overflow: hidden; he
 
 .content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 .top-bar { padding: 15px 30px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-#tab-container { padding: 25px; flex: 1; overflow-y: auto; }
+#tab-container { padding: 25px; padding-bottom: 80px; flex: 1; overflow-y: auto; overflow-x: hidden; }
 .tab-content { display: none; }
 .tab-content.active { display: block; animation: fadeIn 0.2s ease-out; }
 
