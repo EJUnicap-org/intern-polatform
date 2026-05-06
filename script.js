@@ -965,6 +965,34 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ==========================================
+    // SISTEMA DE TROCA DE TEMA (DARK / LIGHT)
+    // ==========================================
+    const themeBtn = document.getElementById('theme-toggle');
+    const savedTheme = localStorage.getItem('theme_ej') || 'dark';
+
+    // Aplica o tema salvo assim que a página carrega
+    if (savedTheme === 'light') {
+        document.body.setAttribute('data-theme', 'light');
+        if (themeBtn) themeBtn.innerHTML = '<i class="ph ph-moon"></i> Modo Escuro';
+    }
+
+    // Motor do botão
+    themeBtn?.addEventListener('click', (e) => {
+        e.preventDefault();
+        const isLight = document.body.getAttribute('data-theme') === 'light';
+
+        if (isLight) {
+            document.body.removeAttribute('data-theme');
+            localStorage.setItem('theme_ej', 'dark');
+            themeBtn.innerHTML = '<i class="ph ph-sun"></i> Modo Claro';
+        } else {
+            document.body.setAttribute('data-theme', 'light');
+            localStorage.setItem('theme_ej', 'light');
+            themeBtn.innerHTML = '<i class="ph ph-moon"></i> Modo Escuro';
+        }
+    });
+
     function extrairInsumosDaTabela(tableId) {
         const insumos = [];
         document.querySelectorAll(`#${tableId} tr`).forEach(row => {

@@ -1,24 +1,88 @@
 /* ==========================================
-   VARIÁVEIS E RESET
+   VARIÁVEIS E TEMA ESCURO (PADRÃO)
 ========================================== */
 :root {
+    /* Cores de Fundo - Dark Mode */
     --bg-panel: #18181b;
     --bg-card: #27272a;
     --bg-main: #09090b;
     --sidebar: #121214;
+    --input-bg: #09090b;
+    
+    /* Textos e Bordas */
     --border: #3f3f46;
-    --primary: #6366f1;
-    --primary-hover: #4f46e5;
     --text-main: #f4f4f5;
     --text-dim: #a1a1aa;
-    --input-bg: #09090b;
+    
+    /* Identidade EJ Unicap - Bordeaux Velvet */
+    /* Identidade EJ Unicap - De volta ao Roxo/Índigo Original */
+    --primary: #6366f1; 
+    --primary-hover: #4f46e5;
+    
+    /* Status Globais */
     --success: #22c55e;
     --danger: #ef4444;
     --warning: #f59e0b;
 }
 
+/* ==========================================
+   TEMA CLARO (IVORY WHISPER) - GATILHO VIA JS
+========================================== */
+[data-theme="light"] {
+    --bg-main: #FFFBF0; /* Ivory Whisper Corrigido */
+    --bg-panel: #ffffff; /* Painéis brancos para gerar contraste com o Ivory */
+    --bg-card: #f5f0e1; /* Um Ivory ligeiramente mais escuro para tabelas */
+    --sidebar: #FFFBF0;
+    --input-bg: #ffffff;
+    
+    --border: #e0d9c5;
+    --text-main: #1a1a1a;
+    --text-dim: #52525b;
+}
+
+/* ==========================================
+   SOBRESCRITA DA COR PRIMÁRIA NO MODO CLARO
+========================================== */
+[data-theme="light"] {
+    --bg-main: #FFFBF0; 
+    --bg-panel: #ffffff; 
+    --bg-card: #f5f0e1; 
+    --sidebar: #FFFBF0;
+    --input-bg: #ffffff;
+    --border: #e0d9c5;
+    --text-main: #1a1a1a;
+    --text-dim: #52525b;
+
+    --primary: #6D0710; 
+    --primary-hover: #4a040a; 
+}
+
+[data-theme="light"] .dark-input:focus {
+    border-color: var(--primary); 
+    box-shadow: 0 0 0 4px rgba(109, 7, 16, 0.15); 
+}
+
+[data-theme="light"] .status-lead, 
+[data-theme="light"] .status-ativo { 
+    background: rgba(109, 7, 16, 0.1); 
+    color: var(--primary); 
+    border: 1px solid rgba(109, 7, 16, 0.2); 
+}
+
+[data-theme="light"] .upload-area { 
+    background: rgba(109, 7, 16, 0.03); 
+}
+
+[data-theme="light"] .upload-area:hover { 
+    border-color: var(--primary); 
+    background: rgba(109, 7, 16, 0.08); 
+}
+
+/* ==========================================
+   RESET
+========================================== */
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-body { background: var(--bg-main); color: var(--text-main); overflow: hidden; height: 100vh; }
+body { background: var(--bg-main); color: var(--text-main); overflow: hidden; height: 100vh; transition: background-color 0.3s, color 0.3s; }
 
 /* ==========================================
    ESTRUTURA PRINCIPAL (LOGIN E DASHBOARD)
@@ -32,7 +96,7 @@ body { background: var(--bg-main); color: var(--text-main); overflow: hidden; he
 .login-card {
     background: var(--bg-panel); padding: 40px; border-radius: 12px;
     border: 1px solid var(--border); width: 100%; max-width: 380px; text-align: center;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
 }
 
 .logo-login { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 1.8rem; color: var(--primary); margin-bottom: 10px; }
@@ -40,13 +104,13 @@ body { background: var(--bg-main); color: var(--text-main); overflow: hidden; he
 .login-card .dim { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 30px; }
 
 .container { display: flex; width: 100%; height: 100vh; overflow: hidden; }
-#main-dashboard { display: none; } /* Controlado pelo JS */
+#main-dashboard { display: none; } 
 
-.sidebar { width: 260px; background: var(--sidebar); border-right: 1px solid var(--border); padding: 20px; flex-shrink: 0; }
+.sidebar { width: 260px; background: var(--sidebar); border-right: 1px solid var(--border); padding: 20px; flex-shrink: 0; transition: background 0.3s; }
 .logo { display: flex; align-items: center; gap: 10px; margin-bottom: 30px; color: var(--primary); font-weight: bold; }
 .menu-label { font-size: 11px; text-transform: uppercase; color: var(--text-dim); margin: 20px 0 10px; display: block; }
 .nav-link { display: flex; align-items: center; gap: 12px; padding: 12px; color: var(--text-dim); text-decoration: none; border-radius: 8px; margin-bottom: 4px; transition: 0.2s; }
-.nav-link.active, .nav-link:hover { background: var(--bg-card); color: white; }
+.nav-link.active, .nav-link:hover { background: var(--primary); color: white; }
 
 .content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 .top-bar { padding: 15px 30px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
@@ -63,7 +127,7 @@ body { background: var(--bg-main); color: var(--text-main); overflow: hidden; he
 .dashboard-grid-1-6 { display: grid; grid-template-columns: 1.6fr 1fr; gap: 20px; align-items: start; }
 .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 
-.card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px; height: 100%; }
+.card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px; height: 100%; transition: background 0.3s, border-color 0.3s; }
 .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
 .header-main { margin-bottom: 25px; }
 .header-main h1 { font-size: 28px; font-weight: 600; margin-bottom: 4px; }
@@ -73,7 +137,7 @@ body { background: var(--bg-main); color: var(--text-main); overflow: hidden; he
 .btn-primary { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; width: 100%; }
 .btn-primary:hover { background: var(--primary-hover); }
 .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; filter: grayscale(1); }
-.btn-icon { background: var(--bg-card); border: none; color: white; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+.btn-icon { background: var(--bg-card); border: none; color: var(--text-main); width: 32px; height: 32px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
 .btn-icon:hover { background: var(--border); }
 .btn-icon-danger { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: none; border-radius: 6px; padding: 8px; cursor: pointer; }
 .btn-icon-danger:hover { background: var(--danger); color: white; }
@@ -82,19 +146,21 @@ body { background: var(--bg-main); color: var(--text-main); overflow: hidden; he
 
 .input-group { margin-bottom: 15px; display: flex; flex-direction: column; gap: 5px; text-align: left; }
 .input-group label { font-size: 13px; color: var(--text-dim); font-weight: 500; }
-.dark-input { background: var(--input-bg); border: 1.5px solid var(--border); color: white; padding: 12px; border-radius: 8px; width: 100%; outline: none; transition: 0.2s; }
-.dark-input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1); }
+.dark-input { background: var(--input-bg); border: 1.5px solid var(--border); color: var(--text-main); padding: 12px; border-radius: 8px; width: 100%; outline: none; transition: 0.2s; }
+/* Correção do focus para usar sombra baseada no Bordeaux */
+.dark-input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15); }
 .dark-input.sm { width: 60px; text-align: center; }
 
 /* Tabelas e Tags */
 .table-container { margin-top: 20px; overflow-x: auto; }
 .table { width: 100%; border-collapse: separate; border-spacing: 0 8px; text-align: left; }
 .table th { padding: 12px; border-bottom: 1px solid var(--border); color: var(--text-dim); font-size: 13px; }
-.table tr td { background: var(--bg-card); padding: 16px; font-size: 14px; }
+.table tr td { background: var(--bg-card); padding: 16px; font-size: 14px; transition: background 0.3s; }
 .table tr td:first-child { border-radius: 10px 0 0 10px; }
 .table tr td:last-child { border-radius: 0 10px 10px 0; }
 
 .status-badge { padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+/* Correção das cores hardcoded para o Bordeaux Velvet */
 .status-lead, .status-ativo { background: rgba(99, 102, 241, 0.1); color: var(--primary); border: 1px solid rgba(99, 102, 241, 0.2); }
 .status-cliente, .status-approved, .status-validado { background: rgba(34, 197, 94, 0.1); color: var(--success); border: 1px solid rgba(34, 197, 94, 0.2); }
 .status-arquivado, .status-rejected, .status-invalido { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); }
@@ -109,17 +175,16 @@ body { background: var(--bg-main); color: var(--text-main); overflow: hidden; he
 /* ==========================================
    MODAIS E UTILITÁRIOS ESPECÍFICOS
 ========================================== */
-.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; }
-.modal-content { background: var(--bg-panel); border: 1px solid var(--border); padding: 30px; border-radius: 16px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); animation: modalShow 0.3s ease-out; }
+.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; }
+.modal-content { background: var(--bg-panel); border: 1px solid var(--border); padding: 30px; border-radius: 16px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3); animation: modalShow 0.3s ease-out; }
 .modal-header { display: flex; justify-content: space-between; margin-bottom: 20px; }
 .close-btn { background: transparent; border: none; color: var(--text-dim); font-size: 24px; cursor: pointer; transition: 0.2s; }
 .close-btn:hover { color: var(--danger); }
 @keyframes modalShow { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
 
-/* Área de Upload */
+/* Área de Upload corrigida para Bordeaux */
 .upload-area { background: rgba(99, 102, 241, 0.03); border: 2px dashed var(--border); display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 30px; border-radius: 8px; cursor: pointer; transition: 0.3s; text-align: center;}
 .upload-area:hover { border-color: var(--primary); background: rgba(99, 102, 241, 0.08); }
-
 /* Layout de Contatos (Leads) */
 .form-section { background: var(--bg-main); padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border); }
 .contact-row { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; margin-bottom: 10px; align-items: center; }
@@ -130,11 +195,5 @@ body { background: var(--bg-main); color: var(--text-main); overflow: hidden; he
 .progress-fill { height: 100%; background: var(--primary); transition: width 0.3s ease; }
 .buffer-container .progress-fill { background: var(--success); }
 
-/* Correção do overflow para caminhos críticos muito longos */
-#critical-path-text {
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    display: block; /* Garante que respeite as margens da div pai */
-    max-width: 100%;
-    line-height: 1.5;
-}
+/* Correção do overflow */
+#critical-path-text { word-wrap: break-word; overflow-wrap: break-word; display: block; max-width: 100%; line-height: 1.5; }
