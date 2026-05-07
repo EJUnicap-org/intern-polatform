@@ -1581,7 +1581,7 @@ document.getElementById('senha-form')?.addEventListener('submit', async (e) => {
     btnSubmit.disabled = true;
 
     try {
-        const res = await fetchSeguro('/users/me/password', {
+        const res = await fetchSeguro('/auth/me/password', {
             method: 'PATCH', // Ajuste para o método e URL que você usou no seu back-end
             body: JSON.stringify({
                 old_password: senhaAntiga,
