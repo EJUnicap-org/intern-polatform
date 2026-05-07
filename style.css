@@ -197,3 +197,109 @@ body { background: var(--bg-main); color: var(--text-main); overflow: hidden; he
 
 /* Correção do overflow */
 #critical-path-text { word-wrap: break-word; overflow-wrap: break-word; display: block; max-width: 100%; line-height: 1.5; }
+
+/* ==========================================
+   RESPONSIVIDADE (MOBILE FIT) - TOLERÂNCIA ZERO
+========================================== */
+@media (max-width: 768px) {
+    /* 1. Transforma o layout principal de linha para coluna */
+    .container {
+        flex-direction: column;
+    }
+
+    /* 2. Transforma a Sidebar em um menu superior com rolagem horizontal */
+    .sidebar {
+        width: 100%;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding: 10px;
+    }
+
+    .logo {
+        justify-content: center;
+        margin-bottom: 10px;
+    }
+
+    .sidebar .menu {
+        display: flex;
+        overflow-x: auto;
+        gap: 10px;
+        padding-bottom: 5px;
+        -webkit-overflow-scrolling: touch; /* Scroll suave no iOS */
+    }
+
+    /* Esconde títulos do menu para poupar espaço */
+    .menu-label {
+        display: none !important;
+    }
+
+    /* Ajusta os botões do menu para não quebrarem de linha */
+    .nav-link {
+        white-space: nowrap;
+        margin-bottom: 0;
+        padding: 8px 12px;
+        font-size: 13px;
+        flex-shrink: 0;
+    }
+
+    /* Garante que o menu admin também seja flex quando o JS ativá-lo */
+    #menu-admin[style*="display: block"] {
+        display: flex !important;
+        gap: 10px;
+    }
+
+    /* 3. Empilha todos os Grids para 1 Coluna (100% de largura) */
+    .dashboard-grid, 
+    .dashboard-grid-1-6, 
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    /* 4. Corrige o cabeçalho das páginas e quebra os botões para baixo */
+    .header-main {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 15px;
+    }
+
+    /* Ajusta os filtros da precificação no Mobile */
+    .header-main > div:nth-child(2) {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch !important;
+    }
+
+    #preco-lead {
+        width: 100%;
+    }
+
+    /* Ajusta os flex-between gerais (Modais, Botões de add) */
+    .flex-between {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 15px;
+    }
+
+    /* 5. Corrige os campos aninhados (Ex: Inserir Contatos nos Leads) */
+    .contact-row {
+        grid-template-columns: 1fr; /* Empilha Nome, Tel, Cargo e Lixeira */
+        background: var(--bg-card);
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+    }
+
+    .contact-row button {
+        width: 100%;
+        margin-top: 5px;
+    }
+
+    /* 6. Ajusta Modais para não estourarem a tela */
+    .modal-content {
+        width: 95%;
+        padding: 20px;
+        margin: 10px;
+    }
+}
