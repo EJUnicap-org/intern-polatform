@@ -1,8 +1,8 @@
 // ==========================================
 // 1. CONFIGURAÇÕES E FUNÇÕES GLOBAIS
 // ==========================================
-//const API_BASE_URL = 'http://127.0.0.1:8000'; 
-const API_BASE_URL = 'https://api.ejunicap.com.br';
+const API_BASE_URL = 'http://127.0.0.1:8000'; 
+//const API_BASE_URL = 'https://api.ejunicap.com.br';
 function decodificarJWT(token) {
     try {
         const payloadBase64 = token.split('.')[1];
@@ -1121,27 +1121,67 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // // Eventos do RedBull
-    // document.getElementById('file-redbull')?.addEventListener('change', e => {
-    //     const fileName = e.target.files[0]?.name || "Clique ou arraste o arquivo aqui";
-    //     document.getElementById('file-name-rb').innerText = fileName;
-    // });
+    // Drag & Drop visual do RedBull
+    document.getElementById('file-redbull')?.addEventListener('change', e => {
+        const fileName = e.target.files[0]?.name || "Clique ou arraste o arquivo aqui";
+        document.getElementById('file-name-rb').innerText = fileName;
+    });
 
-    // const dropZoneRb = document.getElementById('file-redbull')?.parentElement;
-    // if (dropZoneRb) {
-    //     dropZoneRb.addEventListener('dragover', (e) => {
-    //         e.preventDefault(); dropZoneRb.style.borderColor = 'var(--primary)';
-    //     });
-    //     dropZoneRb.addEventListener('dragleave', (e) => {
-    //         e.preventDefault(); dropZoneRb.style.borderColor = 'var(--border)';
-    //     });
-    //     dropZoneRb.addEventListener('drop', (e) => {
-    //         e.preventDefault(); dropZoneRb.style.borderColor = 'var(--border)';
-    //         if (e.dataTransfer.files.length) {
-    //             document.getElementById('file-redbull').files = e.dataTransfer.files;
-    //             document.getElementById('file-name-rb').innerText = e.dataTransfer.files[0].name;
-    //         }
-    //     });
-    // }
+    // Submissão do Formulário de RedBull
+    document.getElementById('redbull-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const file = document.getElementById('file-redbull').files[0];
+        if (!file) return alert("Anexe o comprovante do PIX.");
+        
+        const btnSubmit = e.target.querySelector('button[type="submit"]');
+        const originalText = btnSubmit.innerText;
+        btnSubmit.innerText = "Fazendo upload seguro..."; 
+        btnSubmit.disabled = true;
+
+        try {
+            // 1. Pede permissão para a Cloudflare via API
+            const resUpload = await fetchSeguro('/files/upload-url', { 
+                method: 'POST', 
+                body: JSON.stringify({ 
+                    file_name: file.name, 
+                    content_type: file.type,
+                    folder: "redbull"
+                }) 
+            });
+            if (!resUpload.ok) throw new Error("Erro na rota de Upload do R2.");
+            const uploadData = await resUpload.json();
+            
+            // 2. Manda o arquivo direto para o Bucket
+            await fetch(uploadData.upload_url, { method: uploadData.method || 'PUT', body: file, headers: { 'Content-Type': file.type } });
+            
+            btnSubmit.innerText = "Registrando no banco...";
+            // 3. Avisa a API de finanças que a compra foi feita
+            const qtdNum = parseInt(document.getElementById('rb-qtd').value);
+            const rbData = {
+                product_name: "Red Bull",
+                quantity: qtdNum,
+                total_value: qtdNum * 7.00, 
+                payment_method: "PIX",
+                receipt_url: uploadData.file_url
+            };
+
+            const resBanco = await fetchSeguro('/finance/sales', { 
+                method: 'POST', 
+                body: JSON.stringify(rbData) 
+            });
+            if (!resBanco.ok) throw new Error('Falha ao registrar a venda.');
+
+            alert("Consumo registrado! O comprovante está salvo");
+            e.target.reset(); 
+            document.getElementById('file-name-rb').innerText = "Clique ou arraste o arquivo aqui";
+            
+        } catch (error) { 
+            alert("Operação Abortada: " + error.message); 
+        } finally { 
+            btnSubmit.innerText = originalText; 
+            btnSubmit.disabled = false; 
+        }
+    });
 
     document.getElementById('btn-bater-ponto')?.addEventListener('click', async (e) => {
         const btn = e.currentTarget;
@@ -1226,7 +1266,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const resUpload = await fetchSeguro('/files/upload-url', { 
-                method: 'POST', body: JSON.stringify({ file_name: file.name, content_type: file.type }) 
+                method: 'POST', 
+                body: JSON.stringify({ 
+                    file_name: file.name, 
+                    content_type: file.type,
+                    folder: "reembolsos"
+                }) 
             });
             if (!resUpload.ok) throw new Error("Erro na rota de Upload Segura");
             const uploadData = await resUpload.json();
