@@ -462,6 +462,25 @@
                             <p class="dim">Controle de ausências e punições disciplinares (Apenas Diretoria)</p>
                         </div>
                     </div>
+
+                    <div class="card table-container" style="margin-bottom: 20px; border-top: 4px solid var(--primary);">
+    <div class="flex-between" style="margin-bottom: 15px;">
+        <h3>Monitoramento em Tempo Real</h3>
+        <span class="badge status-ativo" style="font-size: 10px; padding: 4px 8px;"><i class="ph ph-broadcast"></i> LIVE</span>
+    </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Consultor</th>
+                <th>Status do Ponto</th>
+                <th>Tempo de Sessão</th>
+            </tr>
+        </thead>
+        <tbody id="pc-live-tracking-body">
+            <tr><td colspan="3" class="text-center dim">Iniciando varredura nos servidores...</td></tr>
+        </tbody>
+    </table>
+</div>
                     
                     <div class="dashboard-grid">
                         <!-- Tabela de Faltas -->
@@ -515,21 +534,18 @@
                     </div>
                 </section>
                 <section id="sec-redbull" class="tab-content">
-                    <div class="header-main flex-between">
-                        <div>
-                            <h1>Comprovantes RedBull</h1>
-                            <p class="dim">Enivar <strong>Comprovantes de RedBull compradas na sede</strong></p>
-                        </div>
-                    </div>
-                    <div class="card" style="margin-top: 40px; text-align: center; padding: 50px 20px;">
-                        <i class="ph ph-microsoft-teams" style="font-size: 48px; color: var(--primary); margin-bottom: 15px;"></i>
-                        <h3 style="margin-bottom: 10px;">Módulo em Planejamento</h3>
-                        <p class="dim">desenvolvimento de um módulo para gerenciamento de comprovantes de RedBull. <strong>próxima release.</strong></p>
-                    </div>
-                </section>
-            </div>
-        </main>
+    <div class="header-main flex-between">
+        <div>
+            <h1>Comprovantes RedBull</h1>
+            <p class="dim">Controle de consumo e prestação de contas do frigobar</p>
+        </div>
     </div>
+    <div class="card" style="margin-top: 40px; text-align: center; padding: 50px 20px;">
+        <i class="ph ph-lightning" style="font-size: 48px; color: var(--primary); margin-bottom: 15px;"></i>
+        <h3 style="margin-bottom: 10px;">Módulo em Construção</h3>
+        <p class="dim">A integração com o fluxo de caixa corporativo e a API do Cloudflare R2 será finalizada na <strong>próxima release.</strong></p>
+    </div>
+</section>
 
     <!-- Modais -->
     <div id="modal-projeto" class="modal">
