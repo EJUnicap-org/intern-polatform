@@ -269,15 +269,42 @@
                                 <tbody id="team-status-list"></tbody>
                             </table>
                         </div>
-                        <div class="card" style="display: flex; flex-direction: column; align-items: center; text-align: center; height: fit-content; position: sticky; top: 20px;">
-                            <h3 style="margin-bottom: 25px; width: 100%;">Ocupação Geral</h3>
-                            <div id="team-occupancy-chart" style="width: 150px; height: 150px; border-radius: 50%; background: conic-gradient(var(--primary) 0%, var(--bg-card) 0deg); display: flex; align-items: center; justify-content: center; transition: background 0.5s ease;">
-                                <div style="background: var(--bg-panel); width: 115px; height: 115px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                                    <strong id="occupancy-percent" style="font-size: 32px; color: var(--text-main);">0%</strong>
-                                    <span class="dim" style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Carga</span>
-                                </div>
-                            </div>
-                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 20px; height: fit-content; position: sticky; top: 20px;">
+    
+    <div class="card" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+        <h3 style="margin-bottom: 25px; width: 100%;">Ocupação Geral</h3>
+        <div id="team-occupancy-chart" style="width: 150px; height: 150px; border-radius: 50%; background: conic-gradient(var(--primary) 0%, var(--bg-card) 0deg); display: flex; align-items: center; justify-content: center; transition: background 0.5s ease;">
+            <div style="background: var(--bg-panel); width: 115px; height: 115px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <strong id="occupancy-percent" style="font-size: 32px; color: var(--text-main);">0%</strong>
+                <span class="dim" style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Carga</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="border-left: 4px solid var(--success);">
+        <h3 style="margin-bottom: 15px;">Headcount Disponível</h3>
+        <div class="flex-between" style="margin-bottom: 10px;">
+            <span class="dim small">Membros 100% Livres</span>
+            <strong id="metric-livres" class="text-green">0</strong>
+        </div>
+        <div class="flex-between" style="padding-top: 10px; border-top: 1px dashed var(--border);">
+            <span class="dim small">Membros em Gargalo (>2 proj.)</span>
+            <strong id="metric-gargalo" class="text-yellow">0</strong>
+        </div>
+    </div>
+
+    <div class="card" style="border-left: 4px solid var(--primary);">
+        <h3 style="margin-bottom: 15px;">Esforço Semanal (Time)</h3>
+        <div class="flex-between" style="margin-bottom: 8px;">
+            <span class="dim small">Horas Consumidas vs. Capacidade</span>
+            <strong id="metric-horas-texto" style="color: var(--text-main);">0h / 0h</strong>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="metric-horas-bar" style="width: 0%; background: var(--primary);"></div>
+        </div>
+    </div>
+
+</div>
                     </div>
                 </section>
                 

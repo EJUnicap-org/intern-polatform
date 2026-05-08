@@ -697,20 +697,65 @@ async function carregarDadosTime() {
                 </tr>
                 `;
             }).join('');
+            // ==========================================
+            // CÁLCULOS GERENCIAIS (TOLERÂNCIA ZERO)
+            // ==========================================
             const totalMembros = listaMembros.length;
-            const membrosAlocados = listaMembros.filter(m => (m.active_projects_count || 0) > 0).length;
-            const porcentagemGeral = Math.round((membrosAlocados / totalMembros) * 100);
 
+            // 1. Ocupação Geral
+            const membrosAlocados = listaMembros.filter(m => (m.active_projects_count || 0) > 0).length;
+            const porcentagemGeral = Math.round((membrosAlocados / totalMembros) * 100) || 0;
+
+            // 2. Headcount Disponível
+            const livresCount = listaMembros.filter(m => (m.active_projects_count || 0) === 0).length;
+            // Definindo gargalo como 3 ou mais projetos ativos
+            const gargaloCount = listaMembros.filter(m => (m.active_projects_count || 0) >= 3).length;
+
+            // 3. Esforço Semanal Global
+            const capacidadeTotal = totalMembros * 20; // Meta base da EJ: 20h por membro
+            const horasConsumidas = listaMembros.reduce((acc, item) => {
+                const m = item.user || item;
+                // Tenta pegar a hora do backend. Se falhar, estima 10h por projeto.
+                const horasMembro = parseFloat(m.weekly_hours) || ((m.active_projects_count || 0) * 10);
+                return acc + horasMembro;
+            }, 0);
+
+            const porcentagemHoras = Math.min(Math.round((horasConsumidas / capacidadeTotal) * 100), 100) || 0;
+
+            // ==========================================
+            // ATUALIZAÇÃO DO DOM (INJEÇÃO NOS CARDS)
+            // ==========================================
+
+            // Card 1: Donut Chart
             const chart = document.getElementById('team-occupancy-chart');
             const percentDisplay = document.getElementById('occupancy-percent');
-            
             if (chart && percentDisplay) {
                 let corGrafico = 'var(--success)';
                 if (porcentagemGeral >= 50) corGrafico = 'var(--warning)';
                 if (porcentagemGeral >= 80) corGrafico = 'var(--danger)';
-
                 chart.style.background = `conic-gradient(${corGrafico} ${porcentagemGeral}%, var(--bg-card) 0deg)`;
                 percentDisplay.innerText = `${porcentagemGeral}%`;
+            }
+
+            // Card 2: Headcount
+            const textLivres = document.getElementById('metric-livres');
+            const textGargalo = document.getElementById('metric-gargalo');
+            if (textLivres) textLivres.innerText = livresCount;
+            if (textGargalo) {
+                textGargalo.innerText = gargaloCount;
+                textGargalo.style.color = gargaloCount > 0 ? 'var(--danger)' : 'var(--success)';
+            }
+
+            // Card 3: Esforço Semanal
+            const textHoras = document.getElementById('metric-horas-texto');
+            const barraHoras = document.getElementById('metric-horas-bar');
+            if (textHoras) {
+                textHoras.innerText = `${horasConsumidas}h / ${capacidadeTotal}h`;
+                textHoras.style.color = horasConsumidas > capacidadeTotal ? 'var(--danger)' : 'var(--text-main)';
+            }
+            if (barraHoras) {
+                barraHoras.style.width = `${porcentagemHoras}%`;
+                barraHoras.style.background = porcentagemHoras >= 90 ? 'var(--danger)' : (porcentagemHoras >= 70 ? 'var(--warning)' : 'var(--primary)');
             }
 
         } else {
