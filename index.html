@@ -65,7 +65,9 @@
     Comprar Red Bull
 </a>
                 <a href="#" class="nav-link" data-target="reembolsos"><i class="ph ph-hand-coins"></i> Reembolsos</a>
-                
+                <a href="#" class="nav-link" data-target="afastamentos">
+                    <i class="ph ph-calendar-blank"></i> Afastamentos
+                </a>
                 <div id="menu-admin" style="display: none;">
                     <p class="menu-label">Administrativo</p>
                     <a href="#" class="nav-link" data-target="psel"><i class="ph ph-identification-card"></i> Processo Seletivo</a>
@@ -267,6 +269,49 @@
                         </table>
                     </div>
                 </section>
+
+                <section id="sec-afastamentos" class="tab-content">
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px;">
+            <div>
+                <h1>Gestão de Afastamentos</h1>
+                <p class="dim" style="margin-top: 5px;">Solicitação de Férias, Redução de Carga e Modo Avião</p>
+            </div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end;">
+                <button class="btn-outline-sm" onclick="abrirModalVooDiario()" style="width:auto; padding: 8px 15px; border-color: var(--primary); color: var(--primary);">
+                    <i class="ph ph-airplane-in-flight"></i> Agendar Modo Avião
+                </button>
+                <button class="btn-primary" onclick="abrirModalAfastamento()" style="width:auto;">
+                    <i class="ph ph-plus"></i> Nova Solicitação
+                </button>
+            </div>
+        </div>
+        <div id="direx-today-widget" style="display: none; margin-bottom: 20px;">
+            <div class="card" style="border-left: 4px solid var(--warning); padding: 15px;">
+                <h3 style="margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
+                    <i class="ph ph-users-slash" style="color: var(--warning);"></i> 
+                    Fora de Operação Hoje
+                </h3>
+                <div id="direx-today-list" style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <span class="dim small">Sincronizando radares...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card table-container" style="margin-top: 0;">
+            <table class="table">
+                <thead>
+                        <th style="text-align: left;">Membro / Período</th>
+                        <th style="text-align: left;">Tipo</th>
+                        <th style="text-align: left;">Justificativa</th>
+                        <th style="text-align: right;">Ação / Status</th>
+                    </tr>
+                </thead>
+                <tbody id="afastamentos-table-body">
+                    <tr><td colspan="4" class="text-center dim">Carregando solicitações...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
 
                 <section id="sec-reembolsos" class="tab-content">
     <div class="header-main flex-between">
@@ -499,7 +544,26 @@
                             <p class="dim">Controle de ausências e punições disciplinares (Apenas Diretoria)</p>
                         </div>
                     </div>
-
+                    <div class="card" style="border-top: 4px solid var(--primary); margin-bottom: 25px;">
+            <h3 style="margin-bottom: 15px;"><i class="ph ph-gear"></i> Configuração de Semestre</h3>
+            <p class="dim small" style="margin-bottom: 20px;">
+                Use esta ferramenta para bloquear automaticamente as quartas-feiras de Reunião Geral (RG). 
+                O sistema impedirá agendamentos de Modo Avião nestas datas.
+            </p>
+            <form id="form-setup-rgs" style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+                <div class="input-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
+                    <label>Data da 1ª RG do Semestre</label>
+                    <input type="date" id="setup-rg-inicio" class="dark-input" required>
+                </div>
+                <div class="input-group" style="margin-bottom: 0; width: 120px;">
+                    <label>Nº de RGs</label>
+                    <input type="number" id="setup-rg-qtd" class="dark-input" value="12" min="1" max="20" required>
+                </div>
+                <button type="submit" class="btn-primary" style="width: auto; height: 42px;">
+                    <i class="ph ph-magic-wand"></i> Gerar Calendário
+                </button>
+            </form>
+        </div>
                     <div class="card table-container" style="margin-bottom: 20px; border-top: 4px solid var(--primary);">
     <div class="flex-between" style="margin-bottom: 15px;">
         <h3>Monitoramento em Tempo Real</h3>
@@ -716,6 +780,43 @@
         </div>
     </div>
 
+    <div id="modal-afastamento" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Nova Solicitação</h3>
+                <button class="close-btn" onclick="closeModal('modal-afastamento')">&times;</button>
+            </div>
+            <form id="afastamento-form">
+                <div class="input-group">
+                    <label>Tipo de Solicitação</label>
+                    <select id="afast-tipo" class="dark-input" required>
+                        <option value="FERIAS">Férias</option>
+                        <option value="REDUCAO_CARGA">Redução de Carga (Ex: 4h p/ 2h)</option>
+                        <option value="SEMANA_MODO_AVIAO">Semana em Modo Avião</option>
+                    </select>
+                </div>
+                <div class="stats-grid">
+                    <div class="input-group">
+                        <label>Data de Início</label>
+                        <input type="date" id="afast-inicio" class="dark-input" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Data de Término</label>
+                        <input type="date" id="afast-fim" class="dark-input" required>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Justificativa / Observações</label>
+                    <textarea id="afast-motivo" class="dark-input" rows="3" placeholder="Detalhes para análise da diretoria..."></textarea>
+                </div>
+                <div class="flex-between" style="justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                    <button type="button" class="btn-icon" onclick="closeModal('modal-afastamento')" style="width: auto; padding: 0 15px;">Cancelar</button>
+                    <button type="submit" class="btn-primary" style="width: auto;">Enviar Solicitação</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal de Bandeiras -->
     <div id="modal-flag" class="modal">
         <div class="modal-content">
@@ -883,6 +984,34 @@
                 <div class="flex-between" style="justify-content: flex-end; gap: 10px; margin-top: 20px;">
                     <button type="button" class="btn-icon" onclick="closeModal('modal-senha')" style="width: auto; padding: 0 15px;">Cancelar</button>
                     <button type="submit" class="btn-primary" style="width: auto;"><i class="ph ph-lock-key"></i> Atualizar Credencial</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-voo-diario" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3>Agendar Modo Avião</h3>
+                <button class="close-btn" onclick="closeModal('modal-voo-diario')">&times;</button>
+            </div>
+            <form id="voo-diario-form">
+                <p class="dim small" style="margin-bottom: 20px; line-height: 1.4;">
+                    Reserva de 1 dia de home office na semana. Datas com Reunião Geral (RG) ou Férias aprovadas resultarão em bloqueio automático pelo sistema.
+                </p>
+                <div id="blocked-dates-container" style="margin-bottom: 20px; padding: 12px; background: rgba(239, 68, 68, 0.05); border-left: 3px solid var(--danger); border-radius: 4px;">
+                    <strong style="color: var(--danger); font-size: 13px;"><i class="ph ph-warning-circle"></i> Datas Indisponíveis (Próximos 30 dias):</strong>
+                    <ul id="blocked-dates-list" class="dim small" style="margin-top: 8px; padding-left: 20px; list-style-type: square; line-height: 1.6;">
+                        <li>A carregar radar...</li>
+                    </ul>
+                </div>
+                <div class="input-group">
+                    <label>Data Desejada</label>
+                    <input type="date" id="voo-data" class="dark-input" required>
+                </div>
+                <div class="flex-between" style="justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                    <button type="button" class="btn-icon" onclick="closeModal('modal-voo-diario')" style="width: auto; padding: 0 15px;">Cancelar</button>
+                    <button type="submit" class="btn-primary" style="width: auto;"><i class="ph ph-calendar-check"></i> Confirmar Reserva</button>
                 </div>
             </form>
         </div>

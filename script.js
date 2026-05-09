@@ -1,8 +1,8 @@
 // ==========================================
 // 1. CONFIGURAÇÕES E FUNÇÕES GLOBAIS
 // ==========================================
-//const API_BASE_URL = 'http://127.0.0.1:8000'; 
-const API_BASE_URL = 'https://api.ejunicap.com.br';
+const API_BASE_URL = 'http://127.0.0.1:8000'; 
+//const API_BASE_URL = 'https://api.ejunicap.com.br';
 function decodificarJWT(token) {
     try {
         const payloadBase64 = token.split('.')[1];
@@ -48,6 +48,51 @@ async function entrarNoSistema() {
         exibirLogin();
     }
 }
+
+window.abrirModalAfastamento = function() {
+    document.getElementById('afastamento-form').reset();
+    openModal('modal-afastamento');
+};
+
+document.getElementById('afastamento-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalText = btn.innerText;
+    btn.innerText = "Processando..."; btn.disabled = true;
+
+    const payload = {
+        type: document.getElementById('afast-tipo').value,
+        start_date: document.getElementById('afast-inicio').value,
+        end_date: document.getElementById('afast-fim').value,
+        reason: document.getElementById('afast-motivo').value
+    };
+
+    if (payload.start_date > payload.end_date) {
+        alert("Erro: A data de início não pode ser posterior à data de término.");
+        btn.innerText = originalText; btn.disabled = false;
+        return;
+    }
+
+    try {
+        const res = await fetchSeguro('/leave-requests/', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+        
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || "Erro de validação no servidor.");
+        }
+        
+        alert("Solicitação enviada com sucesso para a Diretoria Executiva!");
+        closeModal('modal-afastamento');
+        carregarAfastamentos(); // Atualiza a tabela na hora
+    } catch (error) {
+        alert("Falha na Operação: " + error.message);
+    } finally {
+        btn.innerText = originalText; btn.disabled = false;
+    }
+});
 
 function exibirLogin() {
     const login = document.getElementById('login-container');
@@ -383,6 +428,41 @@ async function carregarProjetosAcompanhamento() {
         `).join('');
     } catch (err) { listBody.innerHTML = `<tr><td colspan="4" class="text-center" style="color:var(--danger)">${err.message}</td></tr>`; }
 }
+
+document.getElementById('form-setup-rgs')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button');
+    const originalText = btn.innerHTML;
+    
+    if (!confirm("Isso irá gerar bloqueios automáticos a cada 15 dias. Confirma a operação?")) return;
+
+    btn.innerText = "Processando..."; btn.disabled = true;
+
+    const payload = {
+        start_date: document.getElementById('setup-rg-inicio').value,
+        occurrences: parseInt(document.getElementById('setup-rg-qtd').value)
+    };
+
+    try {
+        const res = await fetchSeguro('/flight-mode/generate-rgs', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            alert("Sucesso: " + data.message);
+            // Opcional: recarregar a lista de bloqueios se houver uma na tela
+        } else {
+            const err = await res.json();
+            throw new Error(err.detail || "Erro ao gerar calendário.");
+        }
+    } catch (error) {
+        alert("Falha no Setup: " + error.message);
+    } finally {
+        btn.innerHTML = originalText; btn.disabled = false;
+    }
+});
 
 async function carregarLeadsParaPrecificacao() {
     const selector = document.getElementById('preco-lead');
@@ -924,6 +1004,158 @@ async function carregarCheckboxesDeMembros() {
     } catch (e) { container.innerHTML = '<span style="color: var(--danger)">Falha ao carregar a lista de membros.</span>'; }
 }
 
+async function carregarAfastamentos() {
+    const tbody = document.getElementById('afastamentos-table-body');
+    if (!tbody) return;
+
+    const userRole = localStorage.getItem('userRole');
+    const isDirex = userRole === 'ADMIN' || userRole === 'EXECUTIVO' || userRole === 'PC'; 
+
+    if (isDirex) {
+        const widget = document.getElementById('direx-today-widget');
+        const listContainer = document.getElementById('direx-today-list');
+        if (widget && listContainer) {
+            widget.style.display = 'block';
+            fetchSeguro('/flight-mode/today').then(async res => {
+                if (res.ok) {
+                    const foraHoje = await res.json();
+                    if (foraHoje.length === 0) {
+                        listContainer.innerHTML = '<span class="status-badge status-approved"><i class="ph ph-check-circle"></i> Força Total (100% Operacional)</span>';
+                    } else {
+                        listContainer.innerHTML = foraHoje.map(p => `
+                            <div style="background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 6px; padding: 10px; display: flex; flex-direction: column; min-width: 180px;">
+                                <strong style="font-size: 14px; margin-bottom: 4px;">${p.user_name}</strong>
+                                <span class="badge" style="font-size: 10px; margin-bottom: 4px;">${p.type.replace(/_/g, ' ')}</span>
+                                <span class="dim small" style="font-size: 11px;">${p.reason.substring(0, 25)}</span>
+                            </div>
+                        `).join('');
+                    }
+                }
+            }).catch(e => console.error("Erro no radar Direx:", e));
+        }
+    }
+    
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center dim">Sincronizando solicitações com a API...</td></tr>';
+
+    try {
+        const endpoint = isDirex ? '/leave-requests/all' : '/flight-mode/my-calendar';
+        const res = await fetchSeguro(endpoint);
+        if (!res.ok) throw new Error("Erro ao buscar solicitações");
+        const dados = await res.json();
+
+        if (dados.length === 0) {
+            return tbody.innerHTML = '<tr><td colspan="4" class="text-center dim">Nenhuma solicitação encontrada.</td></tr>';
+        }
+
+        tbody.innerHTML = dados.map(req => {
+            const status = (req.status || 'PENDENTE').toUpperCase();
+            // Evita fuso horário quebrando a data
+            const startDate = new Date(req.start_date + 'T12:00:00').toLocaleDateString('pt-BR');
+            const endDate = new Date(req.end_date + 'T12:00:00').toLocaleDateString('pt-BR');
+            const tipoFormatado = req.type.replace(/_/g, ' ');
+
+            let statusHtml = `<span class="status-badge status-${status.toLowerCase()}">${status}</span>`;
+            
+            if (isDirex && (status === 'PENDENTE' || status === 'AGUARDANDO')) {
+                statusHtml = `
+                    <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                        <button class="btn-outline-sm" onclick="julgarAfastamento(${req.id}, 'APROVADO')" style="width: auto; color: var(--success); border-color: var(--success);" title="Aprovar Solicitação">
+                            <i class="ph ph-check"></i> Aprovar
+                        </button>
+                        <button class="btn-outline-sm" onclick="julgarAfastamento(${req.id}, 'REJEITADO')" style="width: auto; color: var(--danger); border-color: var(--danger);" title="Negar Solicitação">
+                            <i class="ph ph-x"></i> Negar
+                        </button>
+                    </div>
+                `;
+            }
+
+            const identificador = isDirex ? (req.user?.name || req.user?.nome || `Membro #${req.user_id}`) : `Sua Solicitação`;
+
+            return `
+                <tr>
+                    <td><div style="display:flex; flex-direction:column;"><strong>${identificador}</strong><span class="dim small">${startDate} até ${endDate}</span></div></td>
+                    <td><span class="badge">${tipoFormatado}</span></td>
+                    <td class="dim">${req.reason || '-'}</td>
+                    <td style="text-align: right;">${statusHtml}</td>
+                </tr>
+            `;
+        }).join('');
+    } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center" style="color:var(--danger)">Erro: ${e.message}</td></tr>`;
+    }
+}
+
+window.julgarAfastamento = async function(id, novoStatus) {
+    if (!confirm(`Atenção: Você tem certeza que deseja ${novoStatus} esta solicitação de afastamento?`)) return;
+    try {
+        const res = await fetchSeguro(`/leave-requests/${id}/status`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status: novoStatus })
+        });
+        if (!res.ok) throw new Error((await res.json()).detail || "Erro de permissão ou status inválido.");
+        alert("Decisão administrativa registrada com sucesso.");
+        carregarAfastamentos(); // Recarrega a tabela
+    } catch (err) { alert("Falha: " + err.message); }
+};
+
+window.abrirModalVooDiario = async function() {
+    document.getElementById('voo-diario-form').reset();
+    openModal('modal-voo-diario');
+
+    const list = document.getElementById('blocked-dates-list');
+    if (list) {
+        list.innerHTML = '<li>Sincronizando com a Diretoria...</li>';
+        try {
+            const res = await fetchSeguro('/flight-mode/blocked-dates');
+            if (res.ok) {
+                const datas = await res.json();
+                if (datas.length === 0) {
+                    list.innerHTML = '<li style="color: var(--success); list-style-type: none;"><i class="ph ph-check"></i> Caminho livre. Nenhum bloqueio iminente.</li>';
+                } else {
+                    // Limita a exibição às 4 próximas datas para não distorcer o modal
+                    list.innerHTML = datas.slice(0, 4).map(d => {
+                        // T'12:00:00' evita bugs de fuso horário no frontend
+                        const dataFormatada = new Date(d.date + 'T12:00:00').toLocaleDateString('pt-BR');
+                        return `<li><strong>${dataFormatada}</strong> - ${d.description}</li>`;
+                    }).join('');
+                }
+            }
+        } catch(e) {
+            list.innerHTML = '<li>Falha ao carregar o radar de bloqueios. Assume risco de rejeição.</li>';
+        }
+    }
+};
+
+document.getElementById('voo-diario-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalText = btn.innerHTML;
+    btn.innerText = "Validando Segurança..."; 
+    btn.disabled = true;
+
+    const targetDate = document.getElementById('voo-data').value;
+
+    try {
+        const res = await fetchSeguro('/flight-mode/', {
+            method: 'POST',
+            body: JSON.stringify({ date: targetDate })
+        });
+        
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || "Erro desconhecido ao processar a data.");
+        }
+        
+        alert("Modo Avião reservado com sucesso! A Diretoria já está ciente.");
+        closeModal('modal-voo-diario');
+    } catch (error) {
+        alert("SOLICITAÇÃO BLOQUEADA:\n" + error.message);
+    } finally {
+        btn.innerHTML = originalText; 
+        btn.disabled = false;
+    }
+});
+
 // ==========================================
 // 3. INICIALIZAÇÃO E EVENT LISTENERS DO DOM
 // ==========================================
@@ -1218,6 +1450,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (targetId === 'precificacao') carregarLeadsParaPrecificacao();
             if (targetId === 'usuarios') carregarUsuariosAdmin();
+            if (targetId === 'afastamentos') {
+                carregarAfastamentos();
+            }
         });
     });
 
