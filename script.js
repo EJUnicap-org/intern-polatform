@@ -1,8 +1,8 @@
 // ==========================================
 // 1. CONFIGURAÇÕES E FUNÇÕES GLOBAIS
 // ==========================================
-//const API_BASE_URL = 'http://127.0.0.1:8000'; 
-const API_BASE_URL = 'https://api.ejunicap.com.br';
+const API_BASE_URL = 'http://127.0.0.1:8000'; 
+//const API_BASE_URL = 'https://api.ejunicap.com.br';
 function decodificarJWT(token) {
     try {
         const payloadBase64 = token.split('.')[1];
@@ -1263,14 +1263,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // 3. Avisa a API de finanças que a compra foi feita
             const qtdNum = parseInt(document.getElementById('rb-qtd').value);
             const rbData = {
-                product_name: "Red Bull",
-                quantity: qtdNum,
-                total_value: qtdNum * 7.00, 
-                payment_method: "PIX",
+                quantity: parseInt(document.getElementById('rb-qtd').value),
                 receipt_url: uploadData.file_url
             };
 
-            const resBanco = await fetchSeguro('/finance/sales', { 
+            const resBanco = await fetchSeguro('/sales/redbull', { 
                 method: 'POST', 
                 body: JSON.stringify(rbData) 
             });
