@@ -272,6 +272,65 @@ window.concluirTarefa = async function(taskId) {
     }
 };
 
+// Função para julgar reembolsos (Apenas Diretoria)
+async function julgarReembolso(id, novoStatus) {
+    const acao = novoStatus === 'APROVADO' ? 'APROVAR' : 'NEGAR';
+    if (!confirm(`Tem certeza que deseja ${acao} o reembolso #${id}?`)) return;
+
+    try {
+        const res = await fetchSeguro(`/reimbursements/${id}/status`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status: novoStatus })
+        });
+        
+        if(res.ok) {
+            alert(`Reembolso ${acao} com sucesso!`);
+            // Chame aqui a sua função que recarrega a tabela. Exemplo:
+            // carregarReembolsos(); 
+            location.reload(); // Fallback rápido caso não tenha a função isolada
+        } else {
+            const err = await res.json();
+            alert("Falha na autorização: " + err.detail);
+        }
+    } catch (error) {
+        alert("Erro de comunicação: " + error.message);
+    }
+}
+
+async function carregarHistoricoRedBull() {
+    const tbody = document.getElementById('rb-history-list');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="3" class="text-center dim">Consultando a nuvem...</td></tr>';
+    
+    try {
+        // ATENÇÃO: Garanta que esta URL bate com a que você criou no Passo 1
+        const res = await fetchSeguro('/sales/redbull/me');
+        if (!res.ok) throw new Error("Falha de autenticação ao buscar dados.");
+        const compras = await res.json();
+
+        if (compras.length === 0) {
+            return tbody.innerHTML = '<tr><td colspan="3" class="text-center dim">Você ainda não registrou nenhum consumo.</td></tr>';
+        }
+
+        tbody.innerHTML = compras.map(c => {
+            // A data é retornada pelo banco. Ajuste .date ou .date_time conforme o seu modelo
+            const dataObjeto = new Date(c.date || c.created_at);
+            const dataStr = dataObjeto.toLocaleDateString('pt-BR');
+            const horaStr = dataObjeto.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            
+            return `
+                <tr>
+                    <td><div style="display:flex; flex-direction:column;"><strong>${dataStr}</strong><span class="dim small">${horaStr}</span></div></td>
+                    <td>${c.quantity} un.</td>
+                    <td><span class="status-badge status-approved">VERIFICADO</span></td>
+                </tr>
+            `;
+        }).join('');
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="3" class="text-center" style="color:var(--danger)">Erro: ${err.message}</td></tr>`;
+    }
+}
+
 async function carregarLeads() {
     const listBody = document.getElementById('leads-list-body');
     if (!listBody) return;
@@ -578,23 +637,66 @@ async function carregarTabelaPonto() {
 
 async function carregarTabelaReembolsos() {
     const tbody = document.getElementById('reembolso-list-body');
+    const titulo = document.getElementById('reembolso-titulo');
+    const desc = document.getElementById('reembolso-desc');
+    const thRow = document.getElementById('reembolso-th');
+    
     if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="4" class="text-center dim">Carregando reembolsos...</td></tr>';
+
+    const userRole = localStorage.getItem('userRole'); // Pega do login
+    const isDirex = userRole === 'ADMIN' || userRole === 'EXECUTIVO';
+    
+    // Configura o cabeçalho dinâmico
+    if (isDirex) {
+        titulo.innerText = "Gestão de Reembolsos (Direx)";
+        desc.innerText = "Aprovação e auditoria de despesas de todos os membros";
+        thRow.innerHTML = "<th>Membro/Título</th><th>Categoria</th><th>Valor</th><th>Ação</th>";
+    }
+
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center dim">Sincronizando caixa...</td></tr>';
+
     try {
-        const res = await fetchSeguro('/reimbursements/');
-        if(!res.ok) throw new Error("Erro");
+        // Se for Direx, chama a rota de todos. Se não, chama a própria.
+        const endpoint = isDirex ? '/reimbursements/all' : '/reimbursements/';
+        const res = await fetchSeguro(endpoint);
+        if(!res.ok) throw new Error("Erro na API");
         const dados = await res.json();
-        if (dados.length === 0) return tbody.innerHTML = '<tr><td colspan="4" class="text-center dim">Nenhum reembolso registrado.</td></tr>';
+
+        if (dados.length === 0) {
+            return tbody.innerHTML = `<tr><td colspan="4" class="text-center dim">Nenhum registro encontrado.</td></tr>`;
+        }
         
-        tbody.innerHTML = dados.map(item => `
-            <tr>
-                <td><div style="display: flex; flex-direction: column;"><strong>${item.title}</strong><span class="dim" style="font-size: 12px;">${new Date(item.date_time || item.created_at).toLocaleDateString('pt-BR')}</span></div></td>
-                <td class="dim">${item.category || '-'}</td>
-                <td>${parseFloat(item.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                <td><span class="status-badge status-${(item.status || 'pending').toLowerCase()}">${item.status || 'Pendente'}</span></td>
-            </tr>
-        `).join('');
-    } catch (e) { tbody.innerHTML = `<tr><td colspan="4" class="text-center dim">Erro ao buscar dados.</td></tr>`; }
+        tbody.innerHTML = dados.map(item => {
+            const status = (item.status || 'PENDING').toUpperCase();
+            const dataStr = new Date(item.date_time || item.created_at).toLocaleDateString('pt-BR');
+            const valor = parseFloat(item.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            
+            // Se for Direx e estiver aguardando, mostra os botões que criamos no back-end
+            let statusHtml = `<span class="status-badge status-${status.toLowerCase()}">${status}</span>`;
+            
+            if (isDirex && (status === 'AGUARDANDO' || status === 'PENDING' || status === 'AWAITING')) {
+                statusHtml = `
+                    <div style="display: flex; gap: 5px;">
+                        <button onclick="julgarReembolso(${item.id}, 'APROVADO')" class="btn-primary" style="background:var(--success); padding:5px 8px; font-size:11px; width:auto;">Aprovar</button>
+                        <button onclick="julgarReembolso(${item.id}, 'REJEITADO')" class="btn-primary" style="background:var(--danger); padding:5px 8px; font-size:11px; width:auto;">Negar</button>
+                    </div>
+                `;
+            }
+
+            const identificador = isDirex ? (item.user?.name || `Membro #${item.user_id}`) : item.title;
+
+            return `
+                <tr>
+                    <td><div style="display:flex; flex-direction:column;"><strong>${identificador}</strong><span class="dim small">${dataStr} - ${item.title}</span></div></td>
+                    <td class="dim">${item.category}</td>
+                    <td>${valor}</td>
+                    <td>${statusHtml}</td>
+                </tr>
+            `;
+        }).join('');
+    } catch (e) { 
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center" style="color:var(--danger)">Falha ao carregar: ${e.message}</td></tr>`; 
+    }
 }
 
 async function carregarDadosTime() {
@@ -816,7 +918,7 @@ async function carregarCheckboxesDeMembros() {
             return `
             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 4px;">
                 <input type="checkbox" class="member-checkbox" value="${membro.id}">
-                <span style="color: white; font-size: 14px;">${membro.name || membro.nome || 'Sem Nome'}</span>
+                <span style="color: var(--text-main); font-size: 14px;">${membro.name || membro.nome || 'Sem Nome'}</span>
             </label>
         `}).join('');
     } catch (e) { container.innerHTML = '<span style="color: var(--danger)">Falha ao carregar a lista de membros.</span>'; }
@@ -1110,6 +1212,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (targetId === 'acompanhamento') {
                 carregarProjetosAcompanhamento();
                 carregarLeadsParaProjetos();
+            }
+            if (targetId === 'redbull') {
+                carregarHistoricoRedBull();
             }
             if (targetId === 'precificacao') carregarLeadsParaPrecificacao();
             if (targetId === 'usuarios') carregarUsuariosAdmin();
