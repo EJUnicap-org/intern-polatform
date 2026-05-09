@@ -1,8 +1,8 @@
 // ==========================================
 // 1. CONFIGURAÇÕES E FUNÇÕES GLOBAIS
 // ==========================================
-const API_BASE_URL = 'http://127.0.0.1:8000'; 
-//const API_BASE_URL = 'https://api.ejunicap.com.br';
+//const API_BASE_URL = 'http://127.0.0.1:8000'; 
+const API_BASE_URL = 'https://api.ejunicap.com.br';
 function decodificarJWT(token) {
     try {
         const payloadBase64 = token.split('.')[1];
