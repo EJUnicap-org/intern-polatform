@@ -1,8 +1,9 @@
 // ==========================================
 // 1. CONFIGURAÇÕES E FUNÇÕES GLOBAIS
 // ==========================================
-//const API_BASE_URL = 'http://127.0.0.1:8000'; 
-const API_BASE_URL = 'https://api.ejunicap.com.br';
+const API_BASE_URL = 'http://127.0.0.1:8000'; 
+//const API_BASE_URL = 'https://api.ejunicap.com.br';
+
 function decodificarJWT(token) {
     try {
         const payloadBase64 = token.split('.')[1];
@@ -12,6 +13,15 @@ function decodificarJWT(token) {
         return null; 
     }
 }
+
+window.acessarComprovante = function(url) {
+    if (!url || url === 'null' || url === 'undefined') {
+        alert("Aviso: Não há comprovante anexado a este registro.");
+        return;
+    }
+    // Abre a URL do Cloudflare R2 em uma nova aba segura
+    window.open(url, '_blank', 'noopener,noreferrer');
+};
 
 async function entrarNoSistema() {
     const login = document.getElementById('login-container');
@@ -35,7 +45,7 @@ async function entrarNoSistema() {
 
         const menuAdmin = document.getElementById('menu-admin');
         if (menuAdmin) {
-            if (userRoleReal === 'ADMIN' || userRoleReal === 'MANAGER' || userRoleReal === 'PC') {
+            if (userRoleReal === 'ADMIN' || userRoleReal === 'MANAGER' || userRoleReal === 'PC' || userRoleReal === 'EXECUTIVO') {
                 menuAdmin.style.display = 'block';
             } else {
                 menuAdmin.style.display = 'none';
@@ -86,7 +96,7 @@ document.getElementById('afastamento-form')?.addEventListener('submit', async (e
         
         alert("Solicitação enviada com sucesso para a Diretoria Executiva!");
         closeModal('modal-afastamento');
-        carregarAfastamentos(); // Atualiza a tabela na hora
+        carregarAfastamentos();
     } catch (error) {
         alert("Falha na Operação: " + error.message);
     } finally {
@@ -317,7 +327,6 @@ window.concluirTarefa = async function(taskId) {
     }
 };
 
-// Função para julgar reembolsos (Apenas Diretoria)
 async function julgarReembolso(id, novoStatus) {
     const acao = novoStatus === 'APROVADO' ? 'APROVAR' : 'NEGAR';
     if (!confirm(`Tem certeza que deseja ${acao} o reembolso #${id}?`)) return;
@@ -330,9 +339,7 @@ async function julgarReembolso(id, novoStatus) {
         
         if(res.ok) {
             alert(`Reembolso ${acao} com sucesso!`);
-            // Chame aqui a sua função que recarrega a tabela. Exemplo:
-            // carregarReembolsos(); 
-            location.reload(); // Fallback rápido caso não tenha a função isolada
+            carregarTabelaReembolsos(); 
         } else {
             const err = await res.json();
             alert("Falha na autorização: " + err.detail);
@@ -348,7 +355,6 @@ async function carregarHistoricoRedBull() {
     tbody.innerHTML = '<tr><td colspan="3" class="text-center dim">Consultando a nuvem...</td></tr>';
     
     try {
-        // ATENÇÃO: Garanta que esta URL bate com a que você criou no Passo 1
         const res = await fetchSeguro('/sales/redbull/me');
         if (!res.ok) throw new Error("Falha de autenticação ao buscar dados.");
         const compras = await res.json();
@@ -358,16 +364,25 @@ async function carregarHistoricoRedBull() {
         }
 
         tbody.innerHTML = compras.map(c => {
-            // A data é retornada pelo banco. Ajuste .date ou .date_time conforme o seu modelo
             const dataObjeto = new Date(c.date || c.created_at);
             const dataStr = dataObjeto.toLocaleDateString('pt-BR');
             const horaStr = dataObjeto.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
             
+            // INJEÇÃO DO BOTÃO DE RECIBO DO REDBULL
+            const receiptBtn = (c.receipt_url && c.receipt_url !== 'null' && c.receipt_url !== 'undefined') 
+                ? `<button class="btn-outline-sm" onclick="acessarComprovante('${c.receipt_url}')" title="Ver Comprovante" style="width: auto; padding: 4px 8px; font-size: 11px; margin-left: 10px; color: var(--text-main); border-color: var(--border);"><i class="ph ph-receipt"></i></button>` 
+                : '';
+
             return `
                 <tr>
                     <td><div style="display:flex; flex-direction:column;"><strong>${dataStr}</strong><span class="dim small">${horaStr}</span></div></td>
                     <td>${c.quantity} un.</td>
-                    <td><span class="status-badge status-approved">VERIFICADO</span></td>
+                    <td>
+                        <div style="display: flex; align-items: center;">
+                            <span class="status-badge status-approved">VERIFICADO</span> 
+                            ${receiptBtn}
+                        </div>
+                    </td>
                 </tr>
             `;
         }).join('');
@@ -452,7 +467,6 @@ document.getElementById('form-setup-rgs')?.addEventListener('submit', async (e) 
         if (res.ok) {
             const data = await res.json();
             alert("Sucesso: " + data.message);
-            // Opcional: recarregar a lista de bloqueios se houver uma na tela
         } else {
             const err = await res.json();
             throw new Error(err.detail || "Erro ao gerar calendário.");
@@ -723,20 +737,20 @@ async function carregarTabelaReembolsos() {
     
     if (!tbody) return;
 
-    const userRole = localStorage.getItem('userRole'); // Pega do login
+    const userRole = localStorage.getItem('userRole'); 
     const isDirex = userRole === 'ADMIN' || userRole === 'EXECUTIVO';
     
-    // Configura o cabeçalho dinâmico
     if (isDirex) {
         titulo.innerText = "Gestão de Reembolsos (Direx)";
         desc.innerText = "Aprovação e auditoria de despesas de todos os membros";
-        thRow.innerHTML = "<th>Membro/Título</th><th>Categoria</th><th>Valor</th><th>Ação</th>";
+        thRow.innerHTML = "<th>Membro/Título</th><th>Categoria</th><th>Valor</th><th>Ações</th>";
+    } else {
+        thRow.innerHTML = "<th>Data/Título</th><th>Categoria</th><th>Valor</th><th>Status / Ações</th>";
     }
 
     tbody.innerHTML = '<tr><td colspan="4" class="text-center dim">Sincronizando caixa...</td></tr>';
 
     try {
-        // Se for Direx, chama a rota de todos. Se não, chama a própria.
         const endpoint = isDirex ? '/reimbursements/all' : '/reimbursements/';
         const res = await fetchSeguro(endpoint);
         if(!res.ok) throw new Error("Erro na API");
@@ -751,14 +765,19 @@ async function carregarTabelaReembolsos() {
             const dataStr = new Date(item.date_time || item.created_at).toLocaleDateString('pt-BR');
             const valor = parseFloat(item.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             
-            // Se for Direx e estiver aguardando, mostra os botões que criamos no back-end
-            let statusHtml = `<span class="status-badge status-${status.toLowerCase()}">${status}</span>`;
+            // INJEÇÃO DO BOTÃO DE RECIBO DO REEMBOLSO
+            const receiptBtn = (item.receipt && item.receipt !== 'null' && item.receipt !== 'undefined') 
+                ? `<button class="btn-outline-sm" onclick="acessarComprovante('${item.receipt}')" title="Ver Comprovante" style="width: auto; padding: 4px 8px; font-size: 11px; margin-left: 5px; color: var(--text-main); border-color: var(--border);"><i class="ph ph-receipt"></i></button>` 
+                : '';
+
+            let statusHtml = `<div style="display: flex; gap: 5px; align-items: center;"><span class="status-badge status-${status.toLowerCase()}">${status}</span> ${receiptBtn}</div>`;
             
             if (isDirex && (status === 'AGUARDANDO' || status === 'PENDING' || status === 'AWAITING')) {
                 statusHtml = `
-                    <div style="display: flex; gap: 5px;">
+                    <div style="display: flex; gap: 5px; align-items: center;">
                         <button onclick="julgarReembolso(${item.id}, 'APROVADO')" class="btn-primary" style="background:var(--success); padding:5px 8px; font-size:11px; width:auto;">Aprovar</button>
                         <button onclick="julgarReembolso(${item.id}, 'REJEITADO')" class="btn-primary" style="background:var(--danger); padding:5px 8px; font-size:11px; width:auto;">Negar</button>
+                        ${receiptBtn}
                     </div>
                 `;
             }
@@ -805,7 +824,6 @@ async function carregarDadosTime() {
                 const statusColor = projetosAtivos > 0 ? 'status-ativo' : 'status-away';
                 const statusLabel = projetosAtivos > 0 ? 'ALOCADO' : 'LIVRE';
 
-                // Usando dados reais que vêm do Backend
                 const isWorking = m.is_working; 
                 const startTime = m.current_start_time;
 
@@ -847,7 +865,6 @@ async function carregarDadosTime() {
                 `;
             }).join('');
 
-            // Cálculos Gerenciais
             const totalMembros = listaMembros.length;
             const membrosAlocados = listaMembros.filter(m => (m.active_projects_count || 0) > 0).length;
             const porcentagemGeral = Math.round((membrosAlocados / totalMembros) * 100) || 0;
@@ -1049,7 +1066,6 @@ async function carregarAfastamentos() {
 
         tbody.innerHTML = dados.map(req => {
             const status = (req.status || 'PENDENTE').toUpperCase();
-            // Evita fuso horário quebrando a data
             const startDate = new Date(req.start_date + 'T12:00:00').toLocaleDateString('pt-BR');
             const endDate = new Date(req.end_date + 'T12:00:00').toLocaleDateString('pt-BR');
             const tipoFormatado = req.type.replace(/_/g, ' ');
@@ -1094,67 +1110,9 @@ window.julgarAfastamento = async function(id, novoStatus) {
         });
         if (!res.ok) throw new Error((await res.json()).detail || "Erro de permissão ou status inválido.");
         alert("Decisão administrativa registrada com sucesso.");
-        carregarAfastamentos(); // Recarrega a tabela
+        carregarAfastamentos(); 
     } catch (err) { alert("Falha: " + err.message); }
 };
-
-window.abrirModalVooDiario = async function() {
-    document.getElementById('voo-diario-form').reset();
-    openModal('modal-voo-diario');
-
-    const list = document.getElementById('blocked-dates-list');
-    if (list) {
-        list.innerHTML = '<li>Sincronizando com a Diretoria...</li>';
-        try {
-            const res = await fetchSeguro('/flight-mode/blocked-dates');
-            if (res.ok) {
-                const datas = await res.json();
-                if (datas.length === 0) {
-                    list.innerHTML = '<li style="color: var(--success); list-style-type: none;"><i class="ph ph-check"></i> Caminho livre. Nenhum bloqueio iminente.</li>';
-                } else {
-                    // Limita a exibição às 4 próximas datas para não distorcer o modal
-                    list.innerHTML = datas.slice(0, 4).map(d => {
-                        // T'12:00:00' evita bugs de fuso horário no frontend
-                        const dataFormatada = new Date(d.date + 'T12:00:00').toLocaleDateString('pt-BR');
-                        return `<li><strong>${dataFormatada}</strong> - ${d.description}</li>`;
-                    }).join('');
-                }
-            }
-        } catch(e) {
-            list.innerHTML = '<li>Falha ao carregar o radar de bloqueios. Assume risco de rejeição.</li>';
-        }
-    }
-};
-
-document.getElementById('voo-diario-form')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = e.target.querySelector('button[type="submit"]');
-    const originalText = btn.innerHTML;
-    btn.innerText = "Validando Segurança..."; 
-    btn.disabled = true;
-
-    const targetDate = document.getElementById('voo-data').value;
-
-    try {
-        const res = await fetchSeguro('/flight-mode/', {
-            method: 'POST',
-            body: JSON.stringify({ date: targetDate })
-        });
-        
-        if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.detail || "Erro desconhecido ao processar a data.");
-        }
-        
-        alert("Modo Avião reservado com sucesso! A Diretoria já está ciente.");
-        closeModal('modal-voo-diario');
-    } catch (error) {
-        alert("SOLICITAÇÃO BLOQUEADA:\n" + error.message);
-    } finally {
-        btn.innerHTML = originalText; 
-        btn.disabled = false;
-    }
-});
 
 // ==========================================
 // 3. INICIALIZAÇÃO E EVENT LISTENERS DO DOM
@@ -1346,16 +1304,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const relogio = document.getElementById('relogio-local');
     const turnoTimer = document.getElementById('turno-timer');
 
-    // =========================================================
-    // O MOTOR GLOBAL (SISTEMA NERVOSO DOS RELÓGIOS)
-    // =========================================================
     setInterval(() => {
         const agora = new Date();
         
-        // 1. Atualiza a Hora Local no Resumo Individual
         if (relogio) relogio.innerText = agora.toLocaleTimeString('pt-BR');
 
-        // 2. Atualiza o Seu Turno Pessoal
         if (window.turnoStartTime && turnoTimer) {
             const diffMs = agora - window.turnoStartTime; 
             
@@ -1380,7 +1333,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 3. ATUALIZA TODA A REDE DO LIVE TRACKING (Visão do Time e Compliance)
         document.querySelectorAll('.live-timer-row').forEach(el => {
             const startStr = el.getAttribute('data-start');
             
@@ -1460,14 +1412,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('file-name-display').innerText = e.target.files[0]?.name || "Arraste ou clique";
     });
 
-    // // Eventos do RedBull
-    // Drag & Drop visual do RedBull
     document.getElementById('file-redbull')?.addEventListener('change', e => {
         const fileName = e.target.files[0]?.name || "Clique ou arraste o arquivo aqui";
         document.getElementById('file-name-rb').innerText = fileName;
     });
 
-    // Submissão do Formulário de RedBull
     document.getElementById('redbull-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const file = document.getElementById('file-redbull').files[0];
@@ -1479,7 +1428,6 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSubmit.disabled = true;
 
         try {
-            // 1. Pede permissão para a Cloudflare via API
             const resUpload = await fetchSeguro('/files/upload-url', { 
                 method: 'POST', 
                 body: JSON.stringify({ 
@@ -1491,11 +1439,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!resUpload.ok) throw new Error("Erro na rota de Upload do R2.");
             const uploadData = await resUpload.json();
             
-            // 2. Manda o arquivo direto para o Bucket
             await fetch(uploadData.upload_url, { method: uploadData.method || 'PUT', body: file, headers: { 'Content-Type': file.type } });
             
             btnSubmit.innerText = "Registrando no banco...";
-            // 3. Avisa a API de finanças que a compra foi feita
             const qtdNum = parseInt(document.getElementById('rb-qtd').value);
             const rbData = {
                 quantity: parseInt(document.getElementById('rb-qtd').value),
@@ -1511,6 +1457,7 @@ document.addEventListener('DOMContentLoaded', () => {
             alert("Consumo registrado! O comprovante está salvo");
             e.target.reset(); 
             document.getElementById('file-name-rb').innerText = "Clique ou arraste o arquivo aqui";
+            carregarHistoricoRedBull();
             
         } catch (error) { 
             alert("Operação Abortada: " + error.message); 
