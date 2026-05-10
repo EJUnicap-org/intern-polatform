@@ -104,6 +104,63 @@ document.getElementById('afastamento-form')?.addEventListener('submit', async (e
     }
 });
 
+window.abrirModalVooDiario = async function() {
+    document.getElementById('voo-diario-form').reset();
+    openModal('modal-voo-diario');
+
+    const list = document.getElementById('blocked-dates-list');
+    if (list) {
+        list.innerHTML = '<li>Sincronizando com a Diretoria...</li>';
+        try {
+            const res = await fetchSeguro('/flight-mode/blocked-dates');
+            if (res.ok) {
+                const datas = await res.json();
+                if (datas.length === 0) {
+                    list.innerHTML = '<li style="color: var(--success); list-style-type: none;"><i class="ph ph-check"></i> Caminho livre. Nenhum bloqueio iminente.</li>';
+                } else {
+                    list.innerHTML = datas.slice(0, 4).map(d => {
+                        const dataFormatada = new Date(d.date + 'T12:00:00').toLocaleDateString('pt-BR');
+                        return `<li><strong>${dataFormatada}</strong> - ${d.description}</li>`;
+                    }).join('');
+                }
+            }
+        } catch(e) {
+            list.innerHTML = '<li>Falha ao carregar o radar de bloqueios. Assume risco de rejeição.</li>';
+        }
+    }
+};
+
+document.getElementById('voo-diario-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalText = btn.innerHTML;
+    btn.innerText = "Validando Segurança..."; 
+    btn.disabled = true;
+
+    const targetDate = document.getElementById('voo-data').value;
+
+    try {
+        const res = await fetchSeguro('/flight-mode/', {
+            method: 'POST',
+            body: JSON.stringify({ date: targetDate })
+        });
+        
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || "Erro desconhecido ao processar a data.");
+        }
+        
+        alert("Modo Avião reservado com sucesso! A Diretoria já está ciente.");
+        closeModal('modal-voo-diario');
+        carregarAfastamentos(); 
+    } catch (error) {
+        alert("SOLICITAÇÃO BLOQUEADA:\n" + error.message);
+    } finally {
+        btn.innerHTML = originalText; 
+        btn.disabled = false;
+    }
+});
+
 function exibirLogin() {
     const login = document.getElementById('login-container');
     const dash = document.getElementById('main-dashboard');
@@ -551,7 +608,7 @@ async function carregarComplianceAdmin() {
     const tbodyFlags = document.getElementById('tabela-todas-flags-body');
     if (!tbodyFlags) return;
     try {
-        const res = await fetchSeguro('/users/all'); 
+        const res = await fetchSeguro('/users/flags/all');
         if (!res.ok) throw new Error("Acesso negado.");
         const flags = await res.json();
         
