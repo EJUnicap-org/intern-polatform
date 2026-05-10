@@ -949,6 +949,11 @@
                     <label>Título da Tarefa</label>
                     <input type="text" id="delegacao-tarefa-titulo" class="dark-input" required placeholder="Ex: Atualizar planilhas financeiras">
                 </div>
+
+                <div class="input-group">
+                    <label>Prazo de Entrega (Deadline)</label>
+                    <input type="date" id="delegacao-tarefa-prazo" class="dark-input">
+                </div>
                 
                 <div class="input-group">
                     <label>Vincular a qual Projeto / Frente?</label>
@@ -1014,6 +1019,30 @@
                     <button type="submit" class="btn-primary" style="width: auto;"><i class="ph ph-calendar-check"></i> Confirmar Reserva</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <div id="modal-user-tasks" class="modal">
+        <div class="modal-content" style="max-width: 750px;">
+            <div class="modal-header">
+                <h3>Raio-X Operacional: <span id="user-tasks-name" style="color: var(--primary);">---</span></h3>
+                <button class="close-btn" onclick="closeModal('modal-user-tasks')">&times;</button>
+            </div>
+            <div class="card table-container" style="margin-top: 0; max-height: 400px; overflow-y: auto; border: 1px solid var(--border);">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Tarefa</th>
+                            <th>Projeto Vinculado</th>
+                            <th>Prazo (Deadline)</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-tasks-body">
+                        <tr><td colspan="4" class="text-center dim">Estabelecendo conexão com o servidor...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 

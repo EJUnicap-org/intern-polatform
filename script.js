@@ -312,6 +312,62 @@ async function carregarLiveTrackingPC() {
     }
 }
 
+window.abrirModalTarefasMembro = async function(userId, userName) {
+    document.getElementById('user-tasks-name').innerText = userName;
+    const tbody = document.getElementById('user-tasks-body');
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center dim"><i class="ph ph-spinner-gap"></i> Extraindo dados da API...</td></tr>';
+    openModal('modal-user-tasks');
+
+    try {
+        // Tentativa de buscar os dados completos do usuário
+        const res = await fetchSeguro(`/users/${userId}`);
+        if (!res.ok) throw new Error("Rota GET /users/{id} não configurada ou sem permissão.");
+        
+        const usuario = await res.json();
+        const listaTarefas = usuario.tarefas || usuario.tasks || [];
+
+        if (listaTarefas.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center dim">Este membro não possui atribuições operacionais no momento.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = listaTarefas.map(t => {
+            const nomeProj = t.projeto_nome || (t.project ? t.project.title : 'Avulsa / Sem Projeto');
+            const titulo = t.title || t.nome || 'Sem título';
+            const status = typeof t.status === 'object' ? t.status.value : (t.status || 'PENDENTE');
+            
+            // Renderização Inteligente do Prazo (Deadline)
+            let prazoHtml = '<span class="dim small">-</span>';
+            if (t.due_date) {
+                const dataPrazo = new Date(t.due_date + 'T12:00:00');
+                const hoje = new Date();
+                hoje.setHours(0,0,0,0);
+                
+                let corPrazo = 'var(--text-main)'; // No prazo
+                if (dataPrazo < hoje && status !== 'CONCLUIDO' && status !== 'COMPLETED') corPrazo = 'var(--danger)'; // Atrasado
+                else if (dataPrazo.getTime() === hoje.getTime() && status !== 'CONCLUIDO' && status !== 'COMPLETED') corPrazo = 'var(--warning)'; // Vence Hoje
+                
+                prazoHtml = `<strong style="color: ${corPrazo};">${dataPrazo.toLocaleDateString('pt-BR')}</strong>`;
+            }
+
+            return `
+            <tr>
+                <td><strong>${titulo}</strong></td>
+                <td class="dim">${nomeProj}</td>
+                <td>${prazoHtml}</td>
+                <td><span class="status-badge status-${status.toLowerCase()}">${status}</span></td>
+            </tr>
+            `;
+        }).join('');
+        
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center" style="color: var(--danger);">
+            <strong>Falha de Arquitetura:</strong> ${err.message}<br>
+            <span class="dim small">O Backend não enviou as tarefas. Verifique a rota no FastAPI.</span>
+        </td></tr>`;
+    }
+};
+
 window.concluirTarefa = async function(taskId) {
     if (!confirm("Deseja realmente marcar esta tarefa como concluída?")) return;
 
@@ -848,6 +904,9 @@ async function carregarDadosTime() {
                             ${nome}
                             ${isAdmin ? `
                                 <div style="display: flex; gap: 5px; margin-left: auto;">
+                                    <button class="btn-outline-sm" style="padding: 4px; border-radius: 4px; color: var(--primary); border-color: var(--primary);" onclick="abrirModalTarefasMembro(${usuarioLogado.id}, '${nome}')" title="Ver Carga de Trabalho">
+                                        <i class="ph ph-magnifying-glass"></i>
+                                    </button>
                                     <button class="btn-outline-sm" style="padding: 4px; border-radius: 4px;" onclick="abrirModalDelegacaoRapida(${usuarioLogado.id}, '${nome}')" title="Atribuição Rápida">
                                         <i class="ph ph-clipboard-text"></i>
                                     </button>
@@ -1735,11 +1794,23 @@ document.getElementById('delegacao-rapida-form')?.addEventListener('submit', asy
     const assigneeId = document.getElementById('delegacao-assignee-id').value;
     const projectId = document.getElementById('delegacao-projeto-id').value;
     const title = document.getElementById('delegacao-tarefa-titulo').value.trim();
+    const prazoRaw = document.getElementById('delegacao-tarefa-prazo').value;
+    const dueDate = prazoRaw ? prazoRaw : null;
     
     btn.disabled = true; btn.innerHTML = '<i class="ph ph-spinner-gap"></i> Delegando...';
 
     try {
-        const res = await fetchSeguro(`/projects/${projectId}/tasks`, { method: 'POST', body: JSON.stringify({ title: title, assigned_to_id: parseInt(assigneeId) }) });
+        const payload = { 
+            title: title, 
+            assigned_to_id: parseInt(assigneeId),
+            due_date: dueDate
+        };
+        
+        const res = await fetchSeguro(`/projects/${projectId}/tasks`, { 
+            method: 'POST', 
+            body: JSON.stringify(payload) 
+        });
+        
         if (!res.ok) throw new Error((await res.json()).detail || "Falha ao delegar a tarefa.");
         
         closeModal('modal-delegacao-rapida'); e.target.reset();
