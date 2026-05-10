@@ -639,8 +639,16 @@ async function carregarTodasFaltasAdmin() {
     const tbodyFaltas = document.getElementById('tabela-todas-faltas-body');
     if (!tbodyFaltas) return;
     try {
-        const res = await fetchSeguro('/absences/all'); 
-        if (!res.ok) throw new Error("Acesso negado.");
+        const res = await fetchSeguro('/users/flags/all');
+        if (!res.ok) {
+            let errorMsg = `Erro HTTP ${res.status}`;
+            try {
+                const errData = await res.json();
+                errorMsg = errData.detail || errorMsg;
+            } catch(e) {} // Se não for JSON, ignora e usa o status numérico
+            throw new Error(errorMsg);
+        }
+        const flags = await res.json();
         const faltas = await res.json();
         
         if (faltas.length === 0) return tbodyFaltas.innerHTML = '<tr><td colspan="4" class="text-center dim">Nenhuma ausência reportada na empresa.</td></tr>';
