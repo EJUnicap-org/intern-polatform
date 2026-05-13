@@ -646,6 +646,11 @@
         <div class="card" style="margin-top: 0;">
             <h3 style="margin-bottom: 20px;">Registrar Consumo</h3>
             <form id="redbull-form">
+                <div id="btn-auditoria-redbull-container" style="display: none;">
+                    <button type="button" class="btn-outline-sm" onclick="carregarAuditoriaRedbull()" style="width: auto; border-color: var(--warning); color: var(--warning);">
+                        <i class="ph ph-lock-key"></i> Auditoria de Caixa
+                    </button>
+                </div>
                 <div class="input-group">
                     <label>Quantidade Consumida</label>
                     <input type="number" id="rb-qtd" class="dark-input" min="1" value="1" required>
@@ -874,6 +879,7 @@
                         <option value="CONSULTANT">Consultor (Padrão)</option>
                         <option value="MANAGER">Gerente / Coordenador</option>
                         <option value="PC">People & Culture (RH)</option>
+                        <option value="EXECUTIVO">Executivo</option>
                         <option value="ADMIN">Administrador / Diretor</option>
                     </select>
                 </div>
@@ -924,6 +930,7 @@
                         <option value="CONSULTANT">Consultor (Padrão)</option>
                         <option value="MANAGER">Gerente / Coordenador</option>
                         <option value="PC">People & Culture (RH)</option>
+                        <option value="EXECUTIVO">Executivo</option>
                         <option value="ADMIN">Administrador / Diretor</option>
                     </select>
                 </div>
@@ -1040,6 +1047,30 @@
                     </thead>
                     <tbody id="user-tasks-body">
                         <tr><td colspan="4" class="text-center dim">Estabelecendo conexão com o servidor...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-auditoria-redbull" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3>Cofre RedBull: <span style="color: var(--warning);">Auditoria de Consumo</span></h3>
+                <button class="close-btn" onclick="closeModal('modal-auditoria-redbull')">&times;</button>
+            </div>
+            <div class="card table-container" style="margin-top: 0; max-height: 400px; overflow-y: auto; border: 1px solid var(--border);">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Membro</th>
+                            <th>Qtd</th>
+                            <th>Data do Registro</th>
+                            <th>Comprovante PIX</th>
+                        </tr>
+                    </thead>
+                    <tbody id="auditoria-redbull-body">
+                        <tr><td colspan="4" class="text-center dim">Abrindo o cofre...</td></tr>
                     </tbody>
                 </table>
             </div>

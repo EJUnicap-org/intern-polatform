@@ -1,8 +1,8 @@
 // ==========================================
 // 1. CONFIGURAÇÕES E FUNÇÕES GLOBAIS
 // ==========================================
-//const API_BASE_URL = 'http://127.0.0.1:8000'; 
-const API_BASE_URL = 'https://api.ejunicap.com.br';
+const API_BASE_URL = 'http://127.0.0.1:8000'; 
+//const API_BASE_URL = 'https://api.ejunicap.com.br';
 
 function decodificarJWT(token) {
     try {
@@ -311,6 +311,63 @@ async function carregarVisaoIndividual() {
     }
 }
 
+async function carregarAuditoriaRedbull() {
+    // 1. Abre o modal e mostra estado de carregamento
+    openModal('modal-auditoria-redbull');
+    const tbody = document.getElementById('auditoria-redbull-body');
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center dim"><i class="ph ph-spinner ph-spin"></i> Puxando transações do servidor...</td></tr>';
+
+    try {
+        // 2. Dispara contra o novo endpoint blindado
+        const res = await fetchSeguro('/sales/redbull/all');
+        
+        if (!res.ok) {
+            if (res.status === 403) throw new Error("Acesso negado. Apenas a Diretoria possui as chaves do cofre.");
+            throw new Error("Falha ao buscar auditoria financeira.");
+        }
+
+        const compras = await res.json();
+
+        // 3. Valida se o banco está vazio
+        if (compras.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center dim">Nenhuma compra de RedBull registrada no sistema.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = ''; // Limpa a tabela para injetar os dados
+
+        // 4. Monta as linhas da tabela
+        compras.forEach(compra => {
+            // Formatação de Data Padrão BR
+            const dataFormatada = new Date(compra.date).toLocaleDateString('pt-BR', {
+                day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+
+            // Extrai o nome do usuário (Puxado pelo selectinload no SQLAlchemy)
+            const nomeMembro = compra.registered_by ? compra.registered_by.name : "Usuário Desconhecido";
+
+            // Monta o botão do comprovante
+            const btnComprovante = compra.receipt_url 
+                ? `<button class="btn-sm" onclick="acessarComprovante('${compra.receipt_url}')" style="background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;"><i class="ph ph-receipt"></i> Ver PIX</button>`
+                : `<span class="dim" style="color: var(--danger);">Sem PIX</span>`;
+
+            // Injeta o HTML da linha
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="font-weight: 500;">${nomeMembro}</td>
+                <td>${compra.quantity} un.</td>
+                <td>${dataFormatada}</td>
+                <td>${btnComprovante}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+    } catch (err) {
+        // Tratamento visual de erros
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center" style="color: var(--danger);"><i class="ph ph-warning-circle"></i> ${err.message}</td></tr>`;
+    }
+}
+
 async function carregarLiveTrackingPC() {
     const tbody = document.getElementById('pc-live-tracking-body');
     if (!tbody) return;
@@ -463,6 +520,18 @@ async function julgarReembolso(id, novoStatus) {
 }
 
 async function carregarHistoricoRedBull() {
+
+    const userRole = localStorage.getItem('userRole');
+    const btnAuditoria = document.getElementById('btn-auditoria-redbull-container');
+
+    if (btnAuditoria) {
+        if (userRole === 'ADMIN' || userRole === 'EXECUTIVO' || userRole === 'MANAGER') {
+            btnAuditoria.style.display = 'block'; // Mostra pra Diretoria
+        } else {
+            btnAuditoria.style.display = 'none'; // Esconde dos Consultores
+        }
+    }
+
     const tbody = document.getElementById('rb-history-list');
     if (!tbody) return;
     tbody.innerHTML = '<tr><td colspan="3" class="text-center dim">Consultando a nuvem...</td></tr>';

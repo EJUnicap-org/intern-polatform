@@ -14,7 +14,6 @@
     --text-main: #f4f4f5;
     --text-dim: #a1a1aa;
     
-    /* Identidade EJ Unicap - Bordeaux Velvet */
     /* Identidade EJ Unicap - De volta ao Roxo/Índigo Original */
     --primary: #6366f1; 
     --primary-hover: #4f46e5;
@@ -29,26 +28,12 @@
    TEMA CLARO (IVORY WHISPER) - GATILHO VIA JS
 ========================================== */
 [data-theme="light"] {
-    --bg-main: #FFFBF0; /* Ivory Whisper Corrigido */
-    --bg-panel: #ffffff; /* Painéis brancos para gerar contraste com o Ivory */
-    --bg-card: #f5f0e1; /* Um Ivory ligeiramente mais escuro para tabelas */
-    --sidebar: #FFFBF0;
-    --input-bg: #ffffff;
-    
-    --border: #e0d9c5;
-    --text-main: #1a1a1a;
-    --text-dim: #52525b;
-}
-
-/* ==========================================
-   SOBRESCRITA DA COR PRIMÁRIA NO MODO CLARO
-========================================== */
-[data-theme="light"] {
     --bg-main: #FFFBF0; 
     --bg-panel: #ffffff; 
     --bg-card: #f5f0e1; 
     --sidebar: #FFFBF0;
     --input-bg: #ffffff;
+    
     --border: #e0d9c5;
     --text-main: #1a1a1a;
     --text-dim: #52525b;
@@ -106,7 +91,21 @@ body { background: var(--bg-main); color: var(--text-main); overflow: hidden; he
 .container { display: flex; width: 100%; height: 100vh; overflow: hidden; }
 #main-dashboard { display: none; } 
 
-.sidebar { width: 260px; background: var(--sidebar); border-right: 1px solid var(--border); padding: 20px; flex-shrink: 0; transition: background 0.3s; }
+/* AQUI ESTÁ A CORREÇÃO: overflow-y: auto e estilos de scrollbar */
+.sidebar { 
+    width: 260px; 
+    background: var(--sidebar); 
+    border-right: 1px solid var(--border); 
+    padding: 20px; 
+    flex-shrink: 0; 
+    transition: background 0.3s; 
+    overflow-y: auto; 
+}
+
+.sidebar::-webkit-scrollbar { width: 6px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+.sidebar::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
 .logo { display: flex; align-items: center; gap: 10px; margin-bottom: 30px; color: var(--primary); font-weight: bold; }
 .menu-label { font-size: 11px; text-transform: uppercase; color: var(--text-dim); margin: 20px 0 10px; display: block; }
 .nav-link { display: flex; align-items: center; gap: 12px; padding: 12px; color: var(--text-dim); text-decoration: none; border-radius: 8px; margin-bottom: 4px; transition: 0.2s; }
@@ -147,7 +146,6 @@ body { background: var(--bg-main); color: var(--text-main); overflow: hidden; he
 .input-group { margin-bottom: 15px; display: flex; flex-direction: column; gap: 5px; text-align: left; }
 .input-group label { font-size: 13px; color: var(--text-dim); font-weight: 500; }
 .dark-input { background: var(--input-bg); border: 1.5px solid var(--border); color: var(--text-main); padding: 12px; border-radius: 8px; width: 100%; outline: none; transition: 0.2s; }
-/* Correção do focus para usar sombra baseada no Bordeaux */
 .dark-input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15); }
 .dark-input.sm { width: 60px; text-align: center; }
 
@@ -160,15 +158,9 @@ body { background: var(--bg-main); color: var(--text-main); overflow: hidden; he
 .table tr td:last-child { border-radius: 0 10px 10px 0; }
 
 .status-badge { padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
-/* Correção das cores hardcoded para o Bordeaux Velvet */
 .status-lead, .status-ativo { background: rgba(99, 102, 241, 0.1); color: var(--primary); border: 1px solid rgba(99, 102, 241, 0.2); }
-/* Verde (Sucesso) */
 .status-cliente, .status-approved, .status-validado, .status-aprovado { background: rgba(34, 197, 94, 0.1); color: var(--success); border: 1px solid rgba(34, 197, 94, 0.2); }
-
-/* Vermelho (Perigo/Negado) */
 .status-arquivado, .status-rejected, .status-invalido, .status-rejeitado { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); }
-
-/* Amarelo (Atenção/Aguardando) */
 .status-pending, .status-pendente, .status-aguardando { background: rgba(245, 158, 11, 0.1); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.2); }
 .status-away { background: rgba(161, 161, 170, 0.1); color: var(--text-dim); border: 1px solid rgba(161, 161, 170, 0.2); }
 
@@ -188,10 +180,8 @@ body { background: var(--bg-main); color: var(--text-main); overflow: hidden; he
 .close-btn:hover { color: var(--danger); }
 @keyframes modalShow { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
 
-/* Área de Upload corrigida para Bordeaux */
 .upload-area { background: rgba(99, 102, 241, 0.03); border: 2px dashed var(--border); display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 30px; border-radius: 8px; cursor: pointer; transition: 0.3s; text-align: center;}
 .upload-area:hover { border-color: var(--primary); background: rgba(99, 102, 241, 0.08); }
-/* Layout de Contatos (Leads) */
 .form-section { background: var(--bg-main); padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border); }
 .contact-row { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; margin-bottom: 10px; align-items: center; }
 
@@ -201,19 +191,14 @@ body { background: var(--bg-main); color: var(--text-main); overflow: hidden; he
 .progress-fill { height: 100%; background: var(--primary); transition: width 0.3s ease; }
 .buffer-container .progress-fill { background: var(--success); }
 
-/* Correção do overflow */
 #critical-path-text { word-wrap: break-word; overflow-wrap: break-word; display: block; max-width: 100%; line-height: 1.5; }
 
 /* ==========================================
    RESPONSIVIDADE (MOBILE FIT) - TOLERÂNCIA ZERO
 ========================================== */
 @media (max-width: 768px) {
-    /* 1. Transforma o layout principal de linha para coluna */
-    .container {
-        flex-direction: column;
-    }
+    .container { flex-direction: column; }
 
-    /* 2. Transforma a Sidebar em um menu superior com rolagem horizontal */
     .sidebar {
         width: 100%;
         height: auto;
@@ -222,25 +207,18 @@ body { background: var(--bg-main); color: var(--text-main); overflow: hidden; he
         padding: 10px;
     }
 
-    .logo {
-        justify-content: center;
-        margin-bottom: 10px;
-    }
+    .logo { justify-content: center; margin-bottom: 10px; }
 
     .sidebar .menu {
         display: flex;
         overflow-x: auto;
         gap: 10px;
         padding-bottom: 5px;
-        -webkit-overflow-scrolling: touch; /* Scroll suave no iOS */
+        -webkit-overflow-scrolling: touch;
     }
 
-    /* Esconde títulos do menu para poupar espaço */
-    .menu-label {
-        display: none !important;
-    }
+    .menu-label { display: none !important; }
 
-    /* Ajusta os botões do menu para não quebrarem de linha */
     .nav-link {
         white-space: nowrap;
         margin-bottom: 0;
@@ -249,63 +227,26 @@ body { background: var(--bg-main); color: var(--text-main); overflow: hidden; he
         flex-shrink: 0;
     }
 
-    /* Garante que o menu admin também seja flex quando o JS ativá-lo */
-    #menu-admin[style*="display: block"] {
-        display: flex !important;
-        gap: 10px;
-    }
+    #menu-admin[style*="display: block"] { display: flex !important; gap: 10px; }
 
-    /* 3. Empilha todos os Grids para 1 Coluna (100% de largura) */
-    .dashboard-grid, 
-    .dashboard-grid-1-6, 
-    .stats-grid {
-        grid-template-columns: 1fr;
-        gap: 15px;
-    }
+    .dashboard-grid, .dashboard-grid-1-6, .stats-grid { grid-template-columns: 1fr; gap: 15px; }
 
-    /* 4. Corrige o cabeçalho das páginas e quebra os botões para baixo */
-    .header-main {
-        flex-direction: column;
-        align-items: flex-start !important;
-        gap: 15px;
-    }
+    .header-main { flex-direction: column; align-items: flex-start !important; gap: 15px; }
 
-    /* Ajusta os filtros da precificação no Mobile */
-    .header-main > div:nth-child(2) {
-        width: 100%;
-        flex-direction: column;
-        align-items: stretch !important;
-    }
+    .header-main > div:nth-child(2) { width: 100%; flex-direction: column; align-items: stretch !important; }
 
-    #preco-lead {
-        width: 100%;
-    }
+    #preco-lead { width: 100%; }
 
-    /* Ajusta os flex-between gerais (Modais, Botões de add) */
-    .flex-between {
-        flex-direction: column;
-        align-items: stretch !important;
-        gap: 15px;
-    }
+    .flex-between { flex-direction: column; align-items: stretch !important; gap: 15px; }
 
-    /* 5. Corrige os campos aninhados (Ex: Inserir Contatos nos Leads) */
     .contact-row {
-        grid-template-columns: 1fr; /* Empilha Nome, Tel, Cargo e Lixeira */
+        grid-template-columns: 1fr; 
         background: var(--bg-card);
         padding: 15px;
         border-radius: 8px;
         margin-bottom: 15px;
     }
 
-    .contact-row button {
-        width: 100%;
-        margin-top: 5px;
-    }
-
-    /* 6. Ajusta Modais para não estourarem a tela */
-    .modal-content {
-        width: 95%;
-        padding: 20px;
-        margin: 10px;
-    }
+    .contact-row button { width: 100%; margin-top: 5px; }
+    .modal-content { width: 95%; padding: 20px; margin: 10px; }
 }
