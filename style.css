@@ -250,3 +250,177 @@ body { background: var(--bg-main); color: var(--text-main); overflow: hidden; he
     .contact-row button { width: 100%; margin-top: 5px; }
     .modal-content { width: 95%; padding: 20px; margin: 10px; }
 }
+
+/* ==========================================
+   KANBAN BOARD (CRM) - UI/UX PREMIUM
+========================================== */
+.kanban-board {
+    display: flex; 
+    gap: 20px; 
+    overflow-x: auto; 
+    padding-bottom: 20px; 
+    align-items: flex-start; 
+    min-height: 60vh;
+    /* A Mágica do Mobile: Rolagem suave com âncora magnética */
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Scrollbar estilizada exclusiva para o quadro */
+.kanban-board::-webkit-scrollbar { height: 8px; }
+.kanban-board::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+.kanban-board::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+.kanban-column {
+    background: rgba(39, 39, 42, 0.3); /* Fundo sutilmente translúcido */
+    border: 1px solid var(--border); 
+    border-radius: 12px;
+    width: 320px; 
+    min-width: 320px; 
+    display: flex; 
+    flex-direction: column; 
+    max-height: 70vh; 
+    transition: border-color 0.2s, background-color 0.2s;
+    scroll-snap-align: center; /* No celular, a rolagem trava exatamente no meio da coluna */
+}
+
+/* Brilho de recepção ao arrastar */
+.kanban-column.drag-over { 
+    border-color: var(--primary); 
+    background: rgba(99, 102, 241, 0.05); 
+}
+
+.kanban-header { 
+    padding: 16px; 
+    font-weight: 600; 
+    border-bottom: 1px solid var(--border); 
+    font-size: 14px; 
+    display: flex; 
+    align-items: center; 
+    gap: 8px; 
+    background: var(--bg-panel); /* Cabeçalho sólido para dar contraste */
+    border-radius: 12px 12px 0 0;
+}
+
+.kanban-cards { 
+    padding: 16px; 
+    overflow-y: auto; 
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 12px; 
+    min-height: 150px; 
+}
+
+/* ==========================================
+   KANBAN BOARD (CRM) - UI/UX PREMIUM
+========================================== */
+.kanban-board {
+    display: flex; 
+    gap: 20px; 
+    overflow-x: auto; 
+    padding-bottom: 20px; 
+    align-items: flex-start; 
+    min-height: 60vh;
+    /* A Mágica do Mobile: Rolagem suave com âncora magnética */
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Scrollbar estilizada exclusiva para o quadro */
+.kanban-board::-webkit-scrollbar { height: 8px; }
+.kanban-board::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+.kanban-board::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+.kanban-column {
+    background: rgba(39, 39, 42, 0.3);
+    border: 1px solid var(--border); 
+    border-radius: 12px;
+    
+    /* A MÁGICA DA EXPANSÃO: */
+    flex: 1; /* Permite esticar e preencher o vazio */
+    min-width: 300px; /* Protege o mobile */
+    max-width: 450px; /* Impede de ficar bizarro em monitores Ultrawide */
+    
+    display: flex; 
+    flex-direction: column; 
+    max-height: 70vh; 
+    transition: border-color 0.2s, background-color 0.2s;
+    scroll-snap-align: center;
+}
+
+/* Brilho de recepção ao arrastar */
+.kanban-column.drag-over { 
+    border-color: var(--primary); 
+    background: rgba(99, 102, 241, 0.05); 
+}
+
+.kanban-header { 
+    padding: 16px; 
+    font-weight: 600; 
+    border-bottom: 1px solid var(--border); 
+    font-size: 14px; 
+    display: flex; 
+    align-items: center; 
+    gap: 8px; 
+    background: var(--bg-panel); /* Cabeçalho sólido para dar contraste */
+    border-radius: 12px 12px 0 0;
+}
+
+.kanban-cards { 
+    padding: 16px; 
+    overflow-y: auto; 
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 12px; 
+    min-height: 150px; 
+}
+
+/* Scrollbar interna das colunas */
+.kanban-cards::-webkit-scrollbar { width: 6px; }
+.kanban-cards::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* O Card Individual (Post-it) - Efeito Físico */
+.kanban-card {
+    background: var(--bg-panel); 
+    border: 1px solid var(--border); 
+    padding: 16px; 
+    border-radius: 8px;
+    cursor: grab; 
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2); 
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    position: relative;
+}
+
+/* Linha colorida na lateral esquerda do card dependendo da coluna */
+.kanban-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    border-radius: 8px 0 0 8px;
+    background: var(--text-dim);
+}
+#cards-LEAD .kanban-card::before { background: var(--primary); }
+#cards-CLIENTE .kanban-card::before { background: var(--success); }
+#cards-ARQUIVADO .kanban-card::before { background: var(--danger); }
+
+/* Efeito de levitar ao passar o mouse */
+.kanban-card:hover { 
+    border-color: var(--text-dim); 
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+}
+
+.kanban-card:active { 
+    cursor: grabbing; 
+    transform: scale(0.98);
+}
+
+/* Efeito fantasma durante o arrasto */
+.kanban-card.dragging { 
+    opacity: 0.5; 
+    transform: scale(0.95); 
+    border: 1px dashed var(--primary);
+}

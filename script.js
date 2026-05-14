@@ -574,26 +574,146 @@ async function carregarHistoricoRedBull() {
 }
 
 async function carregarLeads() {
-    const listBody = document.getElementById('leads-list-body');
-    if (!listBody) return;
-    listBody.innerHTML = '<tr><td colspan="5" class="text-center dim">Buscando organizações...</td></tr>';
     try {
         const response = await fetchSeguro('/organizations/leads');
         if (!response.ok) throw new Error("Acesso negado (401/403)");
         const leads = await response.json();
-        if (leads.length === 0) return listBody.innerHTML = '<tr><td colspan="5" class="text-center dim">Nenhum lead encontrado.</td></tr>';
-        
-        listBody.innerHTML = leads.map(lead => `
-            <tr>
-                <td><strong>${lead.name}</strong></td>
-                <td>${lead.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5")}</td>
-                <td><span class="status-badge status-${lead.status.toLowerCase()}">${lead.status}</span></td>
-                <td>${lead.contacts ? lead.contacts.length : 0}</td>
-                <td><button class="btn-icon"><i class="ph ph-eye"></i></button></td>
-            </tr>
-        `).join('');
-    } catch (error) { listBody.innerHTML = `<tr><td colspan="5" class="text-center" style="color:var(--danger)">${error.message}</td></tr>`; }
+        renderizarKanban(leads);
+    } catch (error) { 
+        console.error("Erro ao carregar leads:", error);
+        const colLead = document.getElementById('cards-LEAD');
+        if(colLead) colLead.innerHTML = `<p style="color:var(--danger); font-size:12px; padding:10px;">${error.message}</p>`;
+    }
 }
+
+function renderizarKanban(leads) {
+    // 1. LIMPEZA DAS COLUNAS
+    document.getElementById('cards-LEAD').innerHTML = '';
+    document.getElementById('cards-CLIENTE').innerHTML = '';
+    document.getElementById('cards-ARQUIVADO').innerHTML = '';
+
+    // 2. MATEMÁTICA DO FUNIL E DA DISTRIBUIÇÃO
+    const totalLeads = leads.length;
+    const qtdLeads = leads.filter(l => l.status === 'LEAD').length;
+    const qtdClientes = leads.filter(l => l.status === 'CLIENTE').length;
+    const qtdPerdidos = leads.filter(l => l.status === 'ARQUIVADO').length;
+    
+    const taxaConversao = totalLeads > 0 ? Math.round((qtdClientes / totalLeads) * 100) : 0;
+    
+    // Calcula as fatias do gráfico (Porcentagens)
+    const pctLead = totalLeads > 0 ? (qtdLeads / totalLeads) * 100 : 0;
+    const pctCliente = totalLeads > 0 ? (qtdClientes / totalLeads) * 100 : 0;
+    const pctArquivado = totalLeads > 0 ? (qtdPerdidos / totalLeads) * 100 : 0;
+
+    // 3. ATUALIZAÇÃO DO PLACAR NUMÉRICO
+    const metricTotal = document.getElementById('crm-metric-total');
+    const metricTaxa = document.getElementById('crm-metric-taxa');
+    const metricPerdidos = document.getElementById('crm-metric-perdidos');
+    
+    if(metricTotal) metricTotal.innerText = totalLeads;
+    if(metricTaxa) metricTaxa.innerText = `${taxaConversao}%`;
+    if(metricPerdidos) metricPerdidos.innerText = qtdPerdidos;
+
+    // 4. ATUALIZAÇÃO DO GRÁFICO HORIZONTAL
+    const barLead = document.getElementById('bar-lead');
+    const barCliente = document.getElementById('bar-cliente');
+    const barArquivado = document.getElementById('bar-arquivado');
+    
+    if(barLead) { barLead.style.width = `${pctLead}%`; document.getElementById('lbl-lead').innerText = `${Math.round(pctLead)}%`; }
+    if(barCliente) { barCliente.style.width = `${pctCliente}%`; document.getElementById('lbl-cliente').innerText = `${Math.round(pctCliente)}%`; }
+    if(barArquivado) { barArquivado.style.width = `${pctArquivado}%`; document.getElementById('lbl-arquivado').innerText = `${Math.round(pctArquivado)}%`; }
+
+    // 5. PREENCHIMENTO DOS CARDS
+    if (leads.length === 0) {
+        document.getElementById('cards-LEAD').innerHTML = '<p class="dim text-center" style="padding:15px; font-size:13px;">Nenhum lead no banco.</p>';
+        return;
+    }
+
+    leads.forEach(lead => {
+        const card = document.createElement('div');
+        card.className = 'kanban-card';
+        card.draggable = true;
+        card.id = `lead-${lead.id}`;
+        
+        // Inicia o arrasto guardando de onde veio
+        card.ondragstart = (e) => drag(e, lead.id, lead.status);
+        
+        // Formatação visual do Card (Post-it)
+        const cnpjFormatado = lead.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5");
+        const qtdContatos = lead.contacts ? lead.contacts.length : 0;
+        
+        card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                <strong style="font-size: 14px;">${lead.name}</strong>
+            </div>
+            <div class="dim" style="font-size: 12px; margin-bottom: 4px;"><i class="ph ph-identification-card"></i> ${cnpjFormatado}</div>
+            <div class="dim" style="font-size: 12px;"><i class="ph ph-users"></i> ${qtdContatos} contato(s)</div>
+        `;
+        
+        const container = document.getElementById(`cards-${lead.status}`) || document.getElementById('cards-LEAD');
+        container.appendChild(card);
+    });
+}
+
+function allowDrop(ev) {
+    ev.preventDefault();
+    ev.currentTarget.classList.add('drag-over');
+}
+
+function drag(ev, leadId, oldStatus) {
+    ev.dataTransfer.setData("leadId", leadId);
+    ev.dataTransfer.setData("oldStatus", oldStatus);
+    ev.target.classList.add('dragging');
+}
+
+async function drop(ev, novoStatus) {
+    ev.preventDefault();
+    const column = ev.currentTarget;
+    column.classList.remove('drag-over');
+
+    const leadId = ev.dataTransfer.getData("leadId");
+    const oldStatus = ev.dataTransfer.getData("oldStatus");
+    const card = document.getElementById(`lead-${leadId}`);
+    
+    if(!card) return;
+    card.classList.remove('dragging');
+
+    if (oldStatus === novoStatus) return;
+
+    // Optimistic UI: Muda na tela na hora
+    const cardsContainer = column.querySelector('.kanban-cards');
+    cardsContainer.appendChild(card);
+
+    // Bate na API
+    try {
+        const res = await fetchSeguro(`/organizations/leads/${leadId}/status`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status: novoStatus })
+        });
+
+        if (!res.ok) {
+            const erroData = await res.json();
+            throw new Error(erroData.detail || "Erro desconhecido do servidor.");
+        }
+        
+        // Sucesso: Atualiza o gatilho para o próximo arrasto
+        card.ondragstart = (e) => drag(e, leadId, novoStatus);
+
+    } catch (err) {
+        // Rollback forçado se o banco rejeitar
+        document.getElementById(`cards-${oldStatus}`).appendChild(card);
+        alert(`Ação Revertida: O servidor bloqueou. Detalhe: ${err.message}`);
+    }
+}
+
+// Limpa efeitos visuais
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.kanban-column').forEach(col => {
+        col.addEventListener('dragleave', function(e) {
+            this.classList.remove('drag-over');
+        });
+    });
+});
 
 async function carregarProjetosAcompanhamento() {
     const listBody = document.getElementById('projetos-list-body');
