@@ -1004,7 +1004,7 @@ async function carregarTabelaPonto() {
         if(!res.ok) throw new Error("Erro ao buscar resumo do ponto no servidor.");
         const dados = await res.json(); 
 
-        console.log("DADOS EXATOS QUE VIERAM DO BANCO:", dados);
+        //console.log("DADOS EXATOS QUE VIERAM DO BANCO:", dados);
 
         const totalMinutos = dados.worked_minutes_this_week || 0;
         const horas = Math.floor(totalMinutos / 60);
@@ -1251,7 +1251,7 @@ async function carregarUsuariosAdmin() {
 
         if (usuarios.length === 0) return tbody.innerHTML = '<tr><td colspan="5" class="text-center dim">Nenhum membro encontrado.</td></tr>';
 
-        const roleMap = { 'ADMIN': 'Administrador', 'MANAGER': 'Gerente / Coordenador', 'PC': 'People & Culture', 'EXECUTIVO':'Executivo', 'CONSULTANT': 'Consultor' };
+        const roleMap = { 'ADMIN': 'Administrador', 'MANAGER': 'Gerente / Coordenador', 'PC': 'People & Culture', 'EXECUTIVO':'Executivo', 'CONSULTANT': 'Consultor', "INSTITUCIONAL": "Institucional" };
         const currentUserId = parseInt(localStorage.getItem('userId')) || 0; 
 
         tbody.innerHTML = usuarios.map(u => {
