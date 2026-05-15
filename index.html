@@ -74,6 +74,7 @@
                     <a href="#" class="nav-link" data-target="usuarios"><i class="ph ph-identification-badge"></i> Gestão de Acessos</a>
                     <a href="#" class="nav-link" data-target="time"><i class="ph ph-users"></i> Visão do Time</a>
                     <a href="#" class="nav-link" data-target="precificacao"><i class="ph ph-currency-circle-dollar"></i> Precificação</a>
+                    <a href="#" class="nav-link" data-target="partners"><i class="ph ph-handshake"></i> Rede de Parceiros</a>
                     <a href="#" class="nav-link" data-target="faltas"><i class="ph ph-scales"></i> P&C / Compliance</a>
                     <a href="#" class="nav-link" data-target="diagnostico"><i class="ph ph-math-operations"></i> Diagnóstico PERT</a>
                 </div>
@@ -119,6 +120,45 @@
                                 <tr><td colspan="4" class="text-center dim">Carregando projetos do servidor...</td></tr>
                             </tbody>
                         </table>
+                    </div>
+                </section>
+                
+                <section id="sec-partners" class="tab-content">
+                    <div class="header-main flex-between" style="align-items: center;">
+                        <div>
+                            <h1>Rede de Parceiros (PRM)</h1>
+                            <p class="dim">Gestão institucional, capacitação e cooperação técnica</p>
+                        </div>
+                        <button class="btn-primary" onclick="prepararNovoParceiro()" style="width: max-content; padding: 10px 20px;">
+                            <i class="ph ph-plus"></i> Novo Parceiro
+                        </button>
+                    </div>
+
+                    <div class="kanban-board" style="padding-top: 15px;">
+                        <div class="kanban-column" id="col-CAPTACAO" ondrop="dropPartner(event, 'CAPTAÇÃO')" ondragover="allowDrop(event)">
+                            <div class="kanban-header"><i class="ph ph-magnifying-glass"></i> Captação</div>
+                            <div class="kanban-cards" id="cards-CAPTACAO"></div>
+                        </div>
+                        <div class="kanban-column" id="col-ATIVACAO" ondrop="dropPartner(event, 'ATIVAÇÃO')" ondragover="allowDrop(event)">
+                            <div class="kanban-header" style="border-bottom-color: var(--primary);"><i class="ph ph-rocket-launch"></i> Ativação</div>
+                            <div class="kanban-cards" id="cards-ATIVACAO"></div>
+                        </div>
+                        <div class="kanban-column" id="col-ENCANTAMENTO" ondrop="dropPartner(event, 'ENCANTAMENTO')" ondragover="allowDrop(event)">
+                            <div class="kanban-header" style="border-bottom-color: var(--warning);"><i class="ph ph-star"></i> Encantamento</div>
+                            <div class="kanban-cards" id="cards-ENCANTAMENTO"></div>
+                        </div>
+                        <div class="kanban-column" id="col-GERENCIAMENTO" ondrop="dropPartner(event, 'GERENCIAMENTO')" ondragover="allowDrop(event)">
+                            <div class="kanban-header" style="border-bottom-color: var(--success);"><i class="ph ph-chart-line-up"></i> Gerenciamento</div>
+                            <div class="kanban-cards" id="cards-GERENCIAMENTO"></div>
+                        </div>
+                        <div class="kanban-column" id="col-CONGELADO" ondrop="dropPartner(event, 'CONGELADO')" ondragover="allowDrop(event)">
+                            <div class="kanban-header" style="border-bottom-color: #64748b; color: #64748b;"><i class="ph ph-snowflake"></i> Congelado</div>
+                            <div class="kanban-cards" id="cards-CONGELADO"></div>
+                        </div>
+                        <div class="kanban-column" id="col-FINALIZADA" ondrop="dropPartner(event, 'FINALIZADA')" ondragover="allowDrop(event)">
+                            <div class="kanban-header" style="border-bottom-color: var(--danger);"><i class="ph ph-flag-checkered"></i> Finalizada</div>
+                            <div class="kanban-cards" id="cards-FINALIZADA"></div>
+                        </div>
                     </div>
                 </section>
 
@@ -387,6 +427,7 @@
             <tbody id="reembolso-list-body"></tbody>
         </table>
     </div>
+    
 </section>
                 </section>
 
@@ -542,11 +583,19 @@
                                 </button>
                                 <div style="text-align: left; background: var(--input-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
                                     <div class="flex-between" style="margin-bottom: 8px;">
-                                        <span class="dim small">Progresso Semanal</span>
-                                        <strong id="horas-feitas-text" style="color: var(--success);">0h / 20h</strong>
+                                        <span class="dim small">Progresso Diário</span>
+                                        <strong id="horas-feitas-dia-text" style="color: var(--primary); font-size: 13px;">0h 0m / 4h</strong>
                                     </div>
-                                    <div class="progress-bar">
-                                        <div class="progress-fill" id="ponto-progress-bar" style="width: 0%; background: var(--success);"></div>
+                                    <div class="progress-bar" style="margin-bottom: 15px; height: 10px;">
+                                        <div class="progress-fill" id="ponto-progress-dia-bar" style="width: 0%; background: var(--primary); transition: width 0.5s ease-in-out;"></div>
+                                    </div>
+
+                                    <div class="flex-between" style="margin-bottom: 8px;">
+                                        <span class="dim small">Progresso Semanal</span>
+                                        <strong id="horas-feitas-semana-text" style="color: var(--success); font-size: 13px;">0h 0m / 20h</strong>
+                                    </div>
+                                    <div class="progress-bar" style="height: 10px;">
+                                        <div class="progress-fill" id="ponto-progress-semana-bar" style="width: 0%; background: var(--success); transition: width 0.5s ease-in-out;"></div>
                                     </div>
                                 </div>
                             </div>
@@ -1130,6 +1179,44 @@
                     </tbody>
                 </table>
             </div>
+        </div>
+    </div>
+
+    <div id="modal-partner" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header flex-between">
+                <h3 id="modal-partner-title">Cadastrar Novo Parceiro</h3>
+                <button class="close-btn" onclick="closeModal('modal-partner')">&times;</button>
+            </div>
+            <form id="form-prm-operacional">
+                <input type="hidden" id="prm-id" value="">
+                <div class="input-group">
+                    <label>Nome da Empresa / Parceiro</label>
+                    <input type="text" id="prm-name" class="dark-input" placeholder="Ex: Ambev, Stone, Amcham..." required>
+                </div>
+                <div class="input-group">
+                    <label>Segmento</label>
+                    <input type="text" id="prm-segment" class="dark-input" placeholder="Ex: Alimentícia, Hub de Conexões...">
+                </div>
+                <div class="input-group">
+                    <label>Representante</label>
+                    <input type="text" id="prm-rep" class="dark-input" placeholder="Nome do contato principal">
+                </div>
+                <div class="input-group">
+                    <label>Temperatura inicial</label>
+                    <select id="prm-temp" class="dark-input">
+                        <option value="FRIO">Frio (Azul)</option>
+                        <option value="QUENTE">Quente (Vermelho)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Expectativas / Observações</label>
+                    <textarea id="prm-expect" class="dark-input" rows="3" placeholder="O que eles esperam da parceria?"></textarea>
+                </div>
+                <button type="submit" class="btn-primary" id="btn-save-prm" style="width: 100%; margin-top: 15px;">
+                    <i class="ph ph-floppy-disk"></i> Salvar Parceiro
+                </button>
+            </form>
         </div>
     </div>
 

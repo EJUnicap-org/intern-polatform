@@ -339,6 +339,7 @@ body { background: var(--bg-main); color: var(--text-main); overflow: hidden; he
     
     /* A MÁGICA DA EXPANSÃO: */
     flex: 1; /* Permite esticar e preencher o vazio */
+    flex-shrink: 0;
     min-width: 300px; /* Protege o mobile */
     max-width: 450px; /* Impede de ficar bizarro em monitores Ultrawide */
     

@@ -228,6 +228,8 @@ async function carregarVisaoIndividual() {
 
         const listaTarefas = usuario.tarefas || usuario.tasks || [];
 
+        
+
         if (listaTarefas.length === 0) {
             tbody.innerHTML = '<tr><td colspan="4" class="text-center dim">Nenhuma tarefa atribuída a você no momento.</td></tr>';
         } else {
@@ -1002,6 +1004,8 @@ async function carregarTabelaPonto() {
         if(!res.ok) throw new Error("Erro ao buscar resumo do ponto no servidor.");
         const dados = await res.json(); 
 
+        console.log("DADOS EXATOS QUE VIERAM DO BANCO:", dados);
+
         const totalMinutos = dados.worked_minutes_this_week || 0;
         const horas = Math.floor(totalMinutos / 60);
         const minutosRestantes = totalMinutos % 60;
@@ -1033,6 +1037,8 @@ async function carregarTabelaPonto() {
                 textStart.innerText = "Nenhum turno em andamento.";
             }
         }
+
+        atualizarVisualizacaoPonto(dados.worked_minutes_today, dados.worked_minutes_this_week);
     } catch (e) { 
         const painelHoras = document.getElementById('ponto-total-horas');
         if (painelHoras) painelHoras.innerHTML = `<span style="font-size: 20px; color: var(--danger);">${e.message}</span>`;
@@ -1427,6 +1433,261 @@ window.julgarAfastamento = async function(id, novoStatus) {
     } catch (err) { alert("Falha: " + err.message); }
 };
 
+
+// ==========================================
+// MÓDULO: REDE DE PARCEIROS (PRM) - À PROVA DE BALAS
+// ==========================================
+
+async function carregarParceiros() {
+    try {
+        const response = await fetchSeguro('/partners/');
+        if (!response.ok) throw new Error("Acesso negado à Rede de Parceiros.");
+        const parceiros = await response.json();
+        
+        window.parceirosAtuais = parceiros; 
+        renderizarKanbanParceiros(parceiros);
+    } catch (error) { 
+        console.error("Erro no PRM:", error);
+    }
+}
+
+function renderizarKanbanParceiros(parceiros) {
+    const colunas = ['CAPTACAO', 'ATIVACAO', 'ENCANTAMENTO', 'GERENCIAMENTO', 'CONGELADO', 'FINALIZADA'];
+    colunas.forEach(c => {
+        const col = document.getElementById(`cards-${c}`);
+        if(col) col.innerHTML = '';
+    });
+
+    if(!parceiros || parceiros.length === 0) return;
+
+    parceiros.forEach(p => {
+        // FILTRO DE SEGURANÇA CONTRA DADOS "UNDEFINED" DO BANCO
+        const id = p.id || Math.random();
+        const name = p.name || 'Parceiro Nulo';
+        const temp = p.temperature || 'FRIO';
+        const status = p.status || 'CAPTAÇÃO';
+        const segment = p.segment || 'Geral';
+        const rep = p.representative || '-';
+
+        const card = document.createElement('div');
+        card.className = 'kanban-card';
+        card.draggable = true;
+        card.id = `partner-${id}`;
+        card.ondragstart = (e) => dragPartner(e, id, status);
+        
+        let tempColor = temp === 'QUENTE' ? 'color: var(--danger); background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger);' : 'color: #0ea5e9; background: rgba(14, 165, 233, 0.1); border: 1px solid #0ea5e9;';
+        
+        card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                <strong style="font-size: 14px;">${name}</strong>
+                <span style="font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; ${tempColor}">${temp}</span>
+            </div>
+            <div class="dim" style="font-size: 12px;"><i class="ph ph-briefcase"></i> ${segment}</div>
+            <div class="dim" style="font-size: 12px; margin-top:4px;"><i class="ph ph-user"></i> ${rep}</div>
+            
+            <div style="display: flex; gap: 8px; margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px;">
+                <button class="btn-outline-sm" onclick="abrirEdicaoParceiro(${id})" style="flex: 1; padding: 6px; font-size: 11px;">
+                    <i class="ph ph-pencil"></i> Editar
+                </button>
+                <button class="btn-outline-sm" onclick="deletarParceiro(${id})" style="flex: 1; padding: 6px; font-size: 11px; color: var(--danger); border-color: rgba(239, 68, 68, 0.3);">
+                    <i class="ph ph-trash"></i> Excluir
+                </button>
+            </div>
+        `;
+        
+        let statusLimpo = status.replace('Ç', 'C').replace('Ã', 'A');
+        const container = document.getElementById(`cards-${statusLimpo}`);
+        if (container) container.appendChild(card);
+    });
+}
+
+function dragPartner(ev, partnerId, oldStatus) {
+    ev.dataTransfer.setData("partnerId", partnerId);
+    ev.dataTransfer.setData("oldStatus", oldStatus);
+    ev.target.classList.add('dragging');
+}
+
+async function dropPartner(ev, novoStatus) {
+    ev.preventDefault();
+    const column = ev.currentTarget;
+    column.classList.remove('drag-over');
+
+    const partnerId = ev.dataTransfer.getData("partnerId");
+    const oldStatus = ev.dataTransfer.getData("oldStatus");
+    const card = document.getElementById(`partner-${partnerId}`);
+    
+    if(!card) return;
+    card.classList.remove('dragging');
+    if (oldStatus === novoStatus) return;
+
+    const novoStatusLimpo = novoStatus.replace('Ç', 'C').replace('Ã', 'A');
+    const oldStatusLimpo = oldStatus.replace('Ç', 'C').replace('Ã', 'A');
+    const cardsContainer = column.querySelector('.kanban-cards');
+    cardsContainer.appendChild(card);
+
+    try {
+        const res = await fetchSeguro(`/partners/${partnerId}/status`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status: novoStatus })
+        });
+
+        if (!res.ok) throw new Error("O servidor rejeitou a atualização.");
+        card.ondragstart = (e) => dragPartner(e, partnerId, novoStatus);
+        
+        const p = window.parceirosAtuais.find(x => x.id == partnerId);
+        if(p) p.status = novoStatus;
+
+    } catch (err) {
+        document.getElementById(`cards-${oldStatusLimpo}`).appendChild(card);
+        alert(`Ação Revertida: ${err.message}`);
+    }
+}
+
+// ----------------------------------------------------
+// LÓGICA DO FORMULÁRIO
+// ----------------------------------------------------
+
+window.prepararNovoParceiro = function() {
+    const form = document.getElementById('form-prm-operacional');
+    if(form) form.reset();
+    document.getElementById('prm-id').value = ''; 
+    document.getElementById('modal-partner-title').innerText = 'Cadastrar Novo Parceiro';
+    openModal('modal-partner');
+};
+
+window.abrirEdicaoParceiro = function(id) {
+    const p = window.parceirosAtuais.find(x => x.id === id);
+    if (!p) return alert("Erro Crítico: Parceiro não encontrado na memória local.");
+
+    document.getElementById('prm-id').value = p.id;
+    document.getElementById('prm-name').value = p.name || '';
+    document.getElementById('prm-segment').value = p.segment || '';
+    document.getElementById('prm-rep').value = p.representative || '';
+    document.getElementById('prm-temp').value = p.temperature || 'FRIO';
+    document.getElementById('prm-expect').value = p.expectations || '';
+
+    document.getElementById('modal-partner-title').innerText = 'Editar Parceiro';
+    openModal('modal-partner');
+};
+
+window.deletarParceiro = async function(id) {
+    if(!confirm("Deseja excluir este parceiro permanentemente?")) return;
+    try {
+        const res = await fetchSeguro(`/partners/${id}`, { method: 'DELETE' });
+        if(res.ok) carregarParceiros();
+        else alert("Falha ao deletar parceiro no servidor.");
+    } catch(err) { alert(err.message); }
+};
+
+document.getElementById('form-prm-operacional')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-save-prm');
+    const partnerId = document.getElementById('prm-id').value;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Salvando...';
+
+    const payload = {
+        name: document.getElementById('prm-name').value,
+        segment: document.getElementById('prm-segment').value,
+        representative: document.getElementById('prm-rep').value,
+        temperature: document.getElementById('prm-temp').value,
+        expectations: document.getElementById('prm-expect').value
+    };
+
+    try {
+        let url = partnerId ? `/partners/${partnerId}` : '/partners/';
+        let method = partnerId ? 'PATCH' : 'POST';
+        
+        if (!partnerId) payload.status = "CAPTAÇÃO";
+
+        const res = await fetchSeguro(url, { method, body: JSON.stringify(payload) });
+        if (!res.ok) throw new Error("Erro de comunicação com o servidor.");
+
+        closeModal('modal-partner');
+        carregarParceiros(); 
+    } catch (err) { 
+        alert("Erro: " + err.message); 
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ph ph-floppy-disk"></i> Salvar Parceiro';
+    }
+});
+
+// ----------------------------------------------------
+// LÓGICA BLINDADA DO FORMULÁRIO (CRIAR E EDITAR)
+// ----------------------------------------------------
+
+window.prepararNovoParceiro = function() {
+    const form = document.getElementById('form-prm-operacional');
+    if(form) form.reset();
+    document.getElementById('prm-id').value = ''; 
+    document.getElementById('modal-partner-title').innerText = 'Cadastrar Novo Parceiro';
+    openModal('modal-partner');
+};
+
+window.abrirEdicaoParceiro = function(id) {
+    const p = window.parceirosAtuais.find(x => x.id === id);
+    if (!p) {
+        alert("Erro Crítico: Parceiro não encontrado na memória local.");
+        return;
+    }
+
+    document.getElementById('prm-id').value = p.id;
+    document.getElementById('prm-name').value = p.name;
+    document.getElementById('prm-segment').value = p.segment || '';
+    document.getElementById('prm-rep').value = p.representative || '';
+    document.getElementById('prm-temp').value = p.temperature;
+    document.getElementById('prm-expect').value = p.expectations || '';
+
+    document.getElementById('modal-partner-title').innerText = 'Editar Parceiro';
+    openModal('modal-partner');
+};
+
+window.deletarParceiro = async function(id) {
+    if(!confirm("Deseja excluir este parceiro permanentemente?")) return;
+    try {
+        const res = await fetchSeguro(`/partners/${id}`, { method: 'DELETE' });
+        if(res.ok) carregarParceiros();
+        else alert("Falha ao deletar parceiro no servidor.");
+    } catch(err) { alert(err.message); }
+};
+
+// Listener atrelado ao NOVO ID. Impossível dar conflito.
+document.getElementById('form-prm-operacional')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-save-prm');
+    const partnerId = document.getElementById('prm-id').value;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Salvando...';
+
+    const payload = {
+        name: document.getElementById('prm-name').value,
+        segment: document.getElementById('prm-segment').value,
+        representative: document.getElementById('prm-rep').value,
+        temperature: document.getElementById('prm-temp').value,
+        expectations: document.getElementById('prm-expect').value
+    };
+
+    try {
+        let url = partnerId ? `/partners/${partnerId}` : '/partners/';
+        let method = partnerId ? 'PATCH' : 'POST';
+        
+        if (!partnerId) payload.status = "CAPTAÇÃO";
+
+        const res = await fetchSeguro(url, { method, body: JSON.stringify(payload) });
+        if (!res.ok) throw new Error("Erro de comunicação com o servidor Backend.");
+
+        closeModal('modal-partner');
+        carregarParceiros(); 
+    } catch (err) { 
+        alert("Erro: " + err.message); 
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ph ph-floppy-disk"></i> Salvar Parceiro';
+    }
+});
 // ==========================================
 // 3. INICIALIZAÇÃO E EVENT LISTENERS DO DOM
 // ==========================================
@@ -1718,6 +1979,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (targetId === 'afastamentos') {
                 carregarAfastamentos();
             }
+            if (targetId === 'partners'){
+                carregarPartners();
+            }
+            
         });
     });
 
@@ -1791,6 +2056,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) { alert("Falha na API de Ponto: " + err.message); } 
         finally { btn.innerHTML = '<i class="ph ph-fingerprint"></i> Registrar Entrada / Saída'; btn.disabled = false; }
     });
+
+    
 
     document.getElementById('projeto-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -2140,3 +2407,58 @@ async function exportarComprovantesRedbull() {
         alert("Erro ao exportar relatório: " + err.message);
     }
 }
+
+// ==========================================
+// GATILHO DE RENDERIZAÇÃO AUTOMÁTICA (PRM)
+// ==========================================
+
+// Faz a aba acordar e buscar os dados assim que você clica no menu lateral
+document.querySelector('[data-target="partners"]')?.addEventListener('click', () => {
+    carregarParceiros();
+});
+
+// (Opcional de Segurança): Se você der F5 na página e já estiver na aba de Parceiros, ele carrega sozinho
+if (document.getElementById('sec-partners')?.classList.contains('active')) {
+    carregarParceiros();
+}
+
+
+// ==========================================
+// MOTOR VISUAL DO PONTO (BARRAS DE PROGRESSO)
+// ==========================================
+
+window.atualizarVisualizacaoPonto = function(minutosHoje, minutosSemana) {
+    // 1. Definição das Metas em Minutos
+    const metaDiariaMinutos = 4 * 60;   // 4 horas = 240 mins
+    const metaSemanalMinutos = 20 * 60; // 20 horas = 1200 mins
+
+    // 2. Proteção contra "Undefined"
+    const minHoje = minutosHoje || 0;
+    const minSemana = minutosSemana || 0;
+
+    // 3. Cálculos de Porcentagem (Travado em 100% máximo)
+    let pctDia = (minHoje / metaDiariaMinutos) * 100;
+    let pctSemana = (minSemana / metaSemanalMinutos) * 100;
+    
+    if (pctDia > 100) pctDia = 100;
+    if (pctSemana > 100) pctSemana = 100;
+
+    // 4. Conversão para Texto (Ex: 1h 30m)
+    const formatarTempo = (totalMinutos) => {
+        const h = Math.floor(totalMinutos / 60);
+        const m = Math.floor(totalMinutos % 60);
+        return `${h}h ${m}m`;
+    };
+
+    // 5. Injeção no DOM
+    const barDia = document.getElementById('ponto-progress-dia-bar');
+    const txtDia = document.getElementById('horas-feitas-dia-text');
+    const barSemana = document.getElementById('ponto-progress-semana-bar');
+    const txtSemana = document.getElementById('horas-feitas-semana-text');
+
+    if (barDia) barDia.style.width = `${pctDia}%`;
+    if (txtDia) txtDia.innerText = `${formatarTempo(minHoje)} / 4h`;
+    
+    if (barSemana) barSemana.style.width = `${pctSemana}%`;
+    if (txtSemana) txtSemana.innerText = `${formatarTempo(minSemana)} / 20h`;
+};
