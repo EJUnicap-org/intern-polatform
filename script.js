@@ -1,8 +1,8 @@
 // ==========================================
 // 1. CONFIGURAÇÕES E FUNÇÕES GLOBAIS
 // ==========================================
-//const API_BASE_URL = 'http://127.0.0.1:8000'; 
-const API_BASE_URL = 'https://api.ejunicap.com.br';
+const API_BASE_URL = 'http://127.0.0.1:8000'; 
+//const API_BASE_URL = 'https://api.ejunicap.com.br';
 
 function decodificarJWT(token) {
     try {
@@ -2093,3 +2093,50 @@ document.getElementById('senha-form')?.addEventListener('submit', async (e) => {
     } catch (err) { alert("Falha de Segurança: " + err.message); } 
     finally { btnSubmit.innerHTML = '<i class="ph ph-lock-key"></i> Atualizar Credencial'; btnSubmit.disabled = false; }
 });
+
+// ==========================================
+// MÓDULO: EXPORTAÇÃO DE AUDITORIA
+// ==========================================
+async function exportarComprovantesRedbull() {
+    try {
+        // 1. Busca os dados no servidor usando a rota segura que já criamos
+        const res = await fetchSeguro('/sales/redbull/all');
+        if (!res.ok) throw new Error("Falha ao acessar os dados do cofre.");
+        
+        const vendas = await res.json();
+
+        if (vendas.length === 0) {
+            alert("O cofre está vazio. Não há dados para exportar.");
+            return;
+        }
+
+        // 2. Monta o cabeçalho do arquivo CSV
+        let csvContent = "Membro;Quantidade;Data_Registro;Status_Pagamento;Link_Comprovante\n";
+
+        // 3. Varre os dados e preenche as linhas
+        vendas.forEach(v => {
+            const nome = v.registered_by ? v.registered_by.name : "Membro Deletado";
+            const data = new Date(v.date).toLocaleString('pt-BR');
+            const link = v.receipt_url ? v.receipt_url : "Sem comprovante anexado";
+            const metodo = v.payment_method || "PIX";
+            
+            // Usamos ponto e vírgula (;) para o Excel em português não bugar as colunas
+            csvContent += `"${nome}";${v.quantity};"${data}";"${metodo}";"${link}"\n`;
+        });
+
+        // 4. Cria o arquivo físico na memória do navegador e força o download
+        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' }); // \uFEFF garante os acentos (BOM)
+        const url = URL.createObjectURL(blob);
+        const linkDownload = document.createElement("a");
+        
+        linkDownload.setAttribute("href", url);
+        linkDownload.setAttribute("download", `Auditoria_RedBull_${new Date().getTime()}.csv`);
+        
+        document.body.appendChild(linkDownload);
+        linkDownload.click();
+        document.body.removeChild(linkDownload);
+
+    } catch (err) {
+        alert("Erro ao exportar relatório: " + err.message);
+    }
+}

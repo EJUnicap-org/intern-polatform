@@ -1106,9 +1106,14 @@
 
     <div id="modal-auditoria-redbull" class="modal">
         <div class="modal-content" style="max-width: 800px;">
-            <div class="modal-header">
+            <div class="modal-header flex-between">
                 <h3>Cofre RedBull: <span style="color: var(--warning);">Auditoria de Consumo</span></h3>
-                <button class="close-btn" onclick="closeModal('modal-auditoria-redbull')">&times;</button>
+                <div style="display: flex; gap: 15px; align-items: center;">
+                    <button class="btn-outline-sm" onclick="exportarComprovantesRedbull()" style="border-color: var(--primary); color: var(--primary); width: auto;">
+                        <i class="ph ph-download-simple"></i> Exportar Relatório
+                    </button>
+                    <button class="close-btn" onclick="closeModal('modal-auditoria-redbull')">&times;</button>
+                </div>
             </div>
             <div class="card table-container" style="margin-top: 0; max-height: 400px; overflow-y: auto; border: 1px solid var(--border);">
                 <table class="table">
