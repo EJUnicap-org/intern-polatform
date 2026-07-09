@@ -721,19 +721,38 @@
                         <p class="dim">desenvolvimento de um Modulo para o processo seletivo. <strong>próximas release.</strong></p>
                     </div>
                 </section>
-                <section id="sec-chat" class="tab-content">
-                    <div class="header-main flex-between">
-                        <div>
-                            <h1>Comunicação Integrada</h1>
-                            <p class="dim">Sincronização de mensagens e avisos</p>
-                        </div>
-                    </div>
-                    <div class="card" style="margin-top: 40px; text-align: center; padding: 50px 20px;">
-                        <i class="ph ph-microsoft-teams" style="font-size: 48px; color: var(--primary); margin-bottom: 15px;"></i>
-                        <h3 style="margin-bottom: 10px;">Módulo em Planejamento</h3>
-                        <p class="dim">desenvolvimento de um chat interno próprio. Esta seção será utilizada como chat("Telegram") interno, para comunicação oficial. <strong>próxima release.</strong></p>
-                    </div>
-                </section>
+                            <section id="sec-chat" class="tab-content">
+    <div class="header-main flex-between">
+        <div>
+            <h1>Comunicação Integrada</h1>
+            <p class="dim">Sincronização de mensagens e avisos</p>
+        </div>
+        <button class="btn-icon" id="btn-refresh-avisos" title="Atualizar agora">
+            <i class="ph ph-arrows-clockwise"></i>
+        </button>
+    </div>
+
+    <div class="card quadro-avisos-card">
+        <div class="card-header quadro-avisos-header">
+            <h3><i class="ph ph-megaphone"></i> Quadro de Avisos</h3>
+            <span class="badge status-ativo" style="font-size: 10px; padding: 4px 8px;"><i class="ph ph-broadcast"></i> AO VIVO</span>
+        </div>
+
+        <div id="mensagens-list" class="mensagens-list">
+            <p class="dim text-center" style="padding: 30px 0;">Sincronizando avisos...</p>
+        </div>
+
+        <form id="form-quadro-avisos" class="mensagens-footer">
+            <div style="flex: 1; display: flex; flex-direction: column;">
+                <textarea id="msg-input" class="dark-input" placeholder="Digite um aviso para a equipe..." maxlength="1500" rows="1" required></textarea>
+                <span id="msg-char-count" class="dim small" style="align-self: flex-end; margin-top: 4px;">0/1500</span>
+            </div>
+            <button type="submit" class="btn-primary" id="btn-publicar-aviso" style="width: auto; padding: 0 22px; height: 46px;">
+                <i class="ph ph-paper-plane-tilt"></i> Publicar
+            </button>
+        </form>
+    </div>
+</section>
                 <section id="sec-redbull" class="tab-content">
     <div class="header-main flex-between">
         <div>
