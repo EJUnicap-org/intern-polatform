@@ -1,0 +1,9 @@
+.agents/
+.agent/
+skills/
+skills-lock.json
+.claude/
+.codex/
+.cursor/
+.copilot/
+.vscode/

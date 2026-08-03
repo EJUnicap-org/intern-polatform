@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard EJ Unicap</title>
+    <title>Gestão Interna · EJ Unicap</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
@@ -12,14 +15,17 @@
     <div id="login-container" class="login-overlay">
         <div class="login-card">
             <div class="logo-login">
-    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
-        <polygon points="9,19 1,7 8,13" />
-        <polygon points="9,19 11,3 14,13" />
-        <polygon points="9,19 21,19 21,11" />
-    </svg>
-    <strong>EJ UNICAP</strong>
-</div>
-            <p class="dim">Gestão Interna | Autenticação</p>
+                <span class="logo-mark">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+                        <polygon points="9,19 1,7 8,13" />
+                        <polygon points="9,19 11,3 14,13" />
+                        <polygon points="9,19 21,19 21,11" />
+                    </svg>
+                </span>
+            </div>
+            <p class="login-eyebrow">EJ UNICAP · GESTÃO INTERNA</p>
+            <h1 class="login-title">Bem-vindo de volta</h1>
+            <p class="dim login-sub">Entre com suas credenciais para acessar o painel operacional da empresa.</p>
             <form id="form-login">
                 <div class="input-group">
                     <label>E-mail / Username</label>
@@ -39,16 +45,18 @@
         
         <aside class="sidebar">
             <div class="logo">
-    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
-        <polygon points="9,19 1,7 8,13" />
-        <polygon points="9,19 11,3 14,13" />
-        <polygon points="9,19 21,19 21,11" />
-    </svg>
-    <div>
-        <strong>EJ UNICAP</strong><br>
-        <span style="font-weight:normal;font-size:12px;color:var(--text-dim)">Gestão Interna</span>
-    </div>
-</div>
+                <span class="logo-mark">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+                        <polygon points="9,19 1,7 8,13" />
+                        <polygon points="9,19 11,3 14,13" />
+                        <polygon points="9,19 21,19 21,11" />
+                    </svg>
+                </span>
+                <div class="logo-text">
+                    <strong>EJ UNICAP</strong>
+                    <span>Gestão Interna</span>
+                </div>
+            </div>
             <nav class="menu">
                 <p class="menu-label">Operacional</p>
                 <a href="#" class="nav-link active" data-target="acompanhamento"><i class="ph ph-chart-line"></i> Acompanhamento</a>
@@ -79,18 +87,30 @@
                     <a href="#" class="nav-link" data-target="diagnostico"><i class="ph ph-math-operations"></i> Diagnóstico PERT</a>
                 </div>
                 
-                <button id="theme-toggle" class="nav-link" style="background: transparent; border: none; width: 100%; text-align: left; cursor: pointer; color: var(--text-dim);">
+                <button id="theme-toggle" class="nav-link nav-action">
                     <i class="ph ph-sun"></i> Modo Claro
                 </button>
-                <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 10px;"></div>
-                <a href="#" id="btn-logout" class="nav-link" style="color: var(--danger);"><i class="ph ph-sign-out"></i> Sair da Conta</a>
+                <div class="menu-footer">
+                    <a href="#" id="btn-logout" class="nav-link nav-action nav-danger"><i class="ph ph-sign-out"></i> Sair da Conta</a>
+                </div>
             </nav>
         </aside>
 
         <main class="content">
             <header class="top-bar">
-                <div class="dim" style="font-size:14px">Dashboard / <span id="page-title" style="color: var(--text-main); font-weight:bold;">Acompanhamento</span></div>
-                <div class="avatar-mini" style="width:36px; height:36px;" title="Usuário">EU</div>
+                <div class="breadcrumb">
+                    <span class="breadcrumb-root"><i class="ph ph-squares-four"></i> Gestão Interna</span>
+                    <span class="breadcrumb-sep">/</span>
+                    <strong id="page-title">Acompanhamento</strong>
+                </div>
+                <div class="top-bar-right">
+                    <div class="ops-clock" title="Horário atual">
+                        <span class="ops-dot"></span>
+                        <span id="topbar-clock" class="ops-clock-time">00:00:00</span>
+                        <span id="topbar-date" class="ops-clock-date">—</span>
+                    </div>
+                    <div class="avatar-mini avatar-top" title="Usuário">EU</div>
+                </div>
             </header>
 
             <div id="tab-container">
@@ -98,6 +118,7 @@
                 <section id="sec-acompanhamento" class="tab-content active">
                     <div class="header-main flex-between">
                         <div>
+                            <span class="eyebrow">Operação · Projetos</span>
                             <h1>Gestão de Projetos</h1>
                             <p class="dim">Acompanhamento e criação de frentes operacionais</p>
                         </div>
@@ -126,6 +147,7 @@
                 <section id="sec-partners" class="tab-content">
                     <div class="header-main flex-between" style="align-items: center;">
                         <div>
+                            <span class="eyebrow">Relacionamento · PRM</span>
                             <h1>Rede de Parceiros (PRM)</h1>
                             <p class="dim">Gestão institucional, capacitação e cooperação técnica</p>
                         </div>
@@ -165,6 +187,7 @@
                 <section id="sec-precificacao" class="tab-content">
                     <div class="header-main flex-between" style="align-items: flex-end;">
                         <div>
+                            <span class="eyebrow">Financeiro · Comercial</span>
                             <h1>Calculadora de Precificação</h1>
                             <p class="dim">Simulação orçamentária e cálculo de Markup</p>
                         </div>
@@ -247,22 +270,22 @@
                                 
                                 <div class="flex-between" style="margin-bottom: 15px;">
                                     <span class="dim">Custo Direto Total:</span>
-                                    <strong id="res-custo" style="font-family: monospace; font-size: 16px;">R$ 0,00</strong>
+                                    <strong id="res-custo" style="font-size: 16px;">R$ 0,00</strong>
                                 </div>
                                 <div class="flex-between" style="margin-bottom: 15px;">
                                     <span class="dim">Impostos Retidos:</span>
-                                    <strong id="res-imposto" style="font-family: monospace; font-size: 16px; color: var(--warning);">R$ 0,00</strong>
+                                    <strong id="res-imposto" style="font-size: 16px; color: var(--warning);">R$ 0,00</strong>
                                 </div>
                                 <div class="flex-between" style="margin-bottom: 15px;">
                                     <span class="dim">Lucro Líquido Projetado:</span>
-                                    <strong id="res-lucro" style="font-family: monospace; font-size: 16px; color: var(--primary);">R$ 0,00</strong>
+                                    <strong id="res-lucro" style="font-size: 16px; color: var(--primary);">R$ 0,00</strong>
                                 </div>
                                 
                                 <hr style="border: 0; border-top: 1px dashed var(--border); margin: 20px 0;">
                                 
                                 <div class="flex-between">
                                     <span class="dim">Preço Final de Venda:</span>
-                                    <strong id="res-venda" style="font-family: monospace; font-size: 26px; color: var(--success);">R$ 0,00</strong>
+                                    <strong id="res-venda" style="font-size: 26px; color: var(--success);">R$ 0,00</strong>
                                 </div>
                             </div>
                         </div>
@@ -272,6 +295,7 @@
                 <section id="sec-usuarios" class="tab-content">
                     <div class="header-main flex-between">
                         <div>
+                            <span class="eyebrow">Administrativo · Acessos</span>
                             <h1>Gestão de Acessos</h1>
                             <p class="dim">Controle de membros, cargos e credenciais da EJ Unicap</p>
                         </div>
@@ -300,6 +324,7 @@
                 <section id="sec-leads" class="tab-content">
                     <div class="header-main flex-between">
                         <div>
+                            <span class="eyebrow">Comercial · CRM</span>
                             <h1>Gestão de Leads (CRM)</h1>
                             <p class="dim">Prospecção e qualificação operacional (Kanban)</p>
                         </div>
@@ -364,6 +389,7 @@
                 <section id="sec-afastamentos" class="tab-content">
         <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px;">
             <div>
+                <span class="eyebrow">Pessoas · Disponibilidade</span>
                 <h1>Gestão de Afastamentos</h1>
                 <p class="dim" style="margin-top: 5px;">Solicitação de Férias, Redução de Carga e Modo Avião</p>
             </div>
@@ -391,6 +417,7 @@
         <div class="card table-container" style="margin-top: 0;">
             <table class="table">
                 <thead>
+                    <tr>
                         <th style="text-align: left;">Membro / Período</th>
                         <th style="text-align: left;">Tipo</th>
                         <th style="text-align: left;">Justificativa</th>
@@ -407,6 +434,7 @@
                 <section id="sec-reembolsos" class="tab-content">
     <div class="header-main flex-between">
         <div>
+            <span class="eyebrow">Financeiro · Reembolsos</span>
             <h1 id="reembolso-titulo">Meus Reembolsos</h1>
             <p class="dim" id="reembolso-desc">Acompanhe suas solicitações financeiras</p>
         </div>
@@ -429,11 +457,10 @@
     </div>
     
 </section>
-                </section>
 
                 <section id="sec-time" class="tab-content">
                     <div class="header-main flex-between">
-                        <div><h1>Visão do Time</h1><p class="dim">Sincronizado com backend</p></div>
+                        <div><span class="eyebrow">Pessoas · Operação</span><h1>Visão do Time</h1><p class="dim">Sincronizado com backend</p></div>
                         <button class="btn-icon" onclick="carregarDadosTime()"><i class="ph ph-arrows-clockwise"></i></button>
                     </div>
                     <div class="dashboard-grid-1-6">
@@ -485,6 +512,7 @@
                 <section id="sec-diagnostico" class="tab-content">
                     <div class="header-main flex-between" style="align-items: flex-end;">
                         <div>
+                            <span class="eyebrow">Operação · Engenharia</span>
                             <h1>Diagnóstico de Projeto</h1>
                             <p class="dim">Selecione o projeto ativo para realizar a análise matemática.</p>
                         </div>
@@ -528,6 +556,7 @@
                 <section id="sec-individual" class="tab-content">
                     <div class="header-main flex-between">
                         <div>
+                            <span class="eyebrow">Pessoas · Individual</span>
                             <h1>Visão Individual</h1>
                             <p class="dim">Gestão das suas tarefas ativas e registro de ponto</p>
                         </div>
@@ -571,12 +600,12 @@
                             <div class="card" style="text-align: center; border-top: 4px solid var(--primary); margin-top: 0;">
                                 <h3>Ponto Eletrônico</h3>
                                 <p class="dim small" style="margin-bottom: 20px;">Meta semanal da EJ: 20h</p>
-                                <div style="font-size: 42px; font-weight: bold; font-family: monospace; color: var(--text-main); margin: 20px 0;" id="relogio-local">
+                                <div style="font-size: 42px; font-weight: bold; color: var(--text-main); margin: 20px 0;" id="relogio-local">
                                     00:00:00
                                 </div>
                                 <div id="turno-container" style="display: none; margin-bottom: 20px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
                                     <span class="dim small" style="text-transform: uppercase; letter-spacing: 1px;">Tempo de Turno Atual</span><br>
-                                    <strong id="turno-timer" style="font-size: 28px; font-family: monospace; transition: all 0.3s; color: var(--success);">00:00:00</strong>
+                                    <strong id="turno-timer" style="font-size: 28px; transition: all 0.3s; color: var(--success);">00:00:00</strong>
                                 </div>
                                 <button class="btn-primary" id="btn-bater-ponto" style="margin-bottom: 20px; font-size: 16px;">
                                     <i class="ph ph-fingerprint"></i> Registrar Entrada / Saída
@@ -617,6 +646,7 @@
                 <section id="sec-ponto" class="tab-content">
                     <div class="header-main flex-between">
                         <div>
+                            <span class="eyebrow">Pessoas · Ponto</span>
                             <h1>Resumo de Ponto</h1>
                             <p class="dim">Seus dados consolidados da semana atual</p>
                         </div>
@@ -624,7 +654,7 @@
                     <div class="dashboard-grid-1-6">
                         <div class="card" style="display: flex; flex-direction: column; justify-content: center; align-items: center; border-top: 4px solid var(--primary);">
                             <h3 style="margin-bottom: 10px;">Tempo Trabalhado na Semana</h3>
-                            <strong id="ponto-total-horas" style="font-size: 56px; color: var(--success); font-family: monospace;">0h 0m</strong>
+                            <strong id="ponto-total-horas" style="font-size: 56px; color: var(--success);">0h 0m</strong>
                             <p class="dim" style="margin-top: 10px;">Baseado em <span id="ponto-total-minutos">0</span> minutos contabilizados no servidor.</p>
                         </div>
                         <div class="card" style="text-align: center;">
@@ -640,6 +670,7 @@
                 <section id="sec-faltas" class="tab-content">
                     <div class="header-main flex-between">
                         <div>
+                            <span class="eyebrow">Pessoas · Compliance</span>
                             <h1>Compliance e Histórico</h1>
                             <p class="dim">Controle de ausências e punições disciplinares (Apenas Diretoria)</p>
                         </div>
@@ -711,6 +742,7 @@
                 <section id="sec-psel" class="tab-content">
                     <div class="header-main flex-between">
                         <div>
+                            <span class="eyebrow">Administrativo · PSEL</span>
                             <h1>Processo seletivo</h1>
                             <p class="dim">Modulo PSEL</p>
                         </div>
@@ -724,6 +756,7 @@
                             <section id="sec-chat" class="tab-content">
     <div class="header-main flex-between">
         <div>
+            <span class="eyebrow">Comunicação</span>
             <h1>Comunicação Integrada</h1>
             <p class="dim">Sincronização de mensagens e avisos</p>
         </div>
@@ -756,6 +789,7 @@
                 <section id="sec-redbull" class="tab-content">
     <div class="header-main flex-between">
         <div>
+            <span class="eyebrow">Logística · Frigobar</span>
             <h1>Comprovantes RedBull</h1>
             <p class="dim">Controle de consumo e prestação de contas do frigobar</p>
         </div>
@@ -799,6 +833,10 @@
         </div>
     </div>
 </section>
+
+            </div>
+        </main>
+    </div>
 
     <!-- Modais -->
     <div id="modal-projeto" class="modal">

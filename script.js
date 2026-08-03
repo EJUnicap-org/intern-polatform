@@ -2494,10 +2494,22 @@ document.addEventListener("DOMContentLoaded", () => {
   const relogio = document.getElementById("relogio-local");
   const turnoTimer = document.getElementById("turno-timer");
 
+  const topbarClock = document.getElementById("topbar-clock");
+  const topbarDate = document.getElementById("topbar-date");
+
   setInterval(() => {
     const agora = new Date();
 
     if (relogio) relogio.innerText = agora.toLocaleTimeString("pt-BR");
+
+    if (topbarClock) topbarClock.innerText = agora.toLocaleTimeString("pt-BR");
+
+    if (topbarDate)
+      topbarDate.innerText = agora.toLocaleDateString("pt-BR", {
+        weekday: "short",
+        day: "2-digit",
+        month: "short",
+      });
 
     if (window.turnoStartTime && turnoTimer) {
       const diffMs = agora - window.turnoStartTime;
